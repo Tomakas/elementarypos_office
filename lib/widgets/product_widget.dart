@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/product_provider.dart';
@@ -37,12 +36,6 @@ class _ProductWidgetState extends State<ProductWidget> {
           (cat) => cat['categoryId'] == widget.product.categoryId,
       orElse: () => {'name': localizations.translate("unknownCategory")},
     )['name'];
-
-    final numberFormat = NumberFormat.currency(
-      locale: 'cs_CZ',
-      symbol: '',
-      decimalDigits: 2,
-    );
 
     final color = productColors[widget.product.color] ?? Colors.grey;
 

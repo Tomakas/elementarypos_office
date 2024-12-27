@@ -389,9 +389,9 @@ Widget buildDynamicPieChart(BuildContext context,
   };
 
   final totalRevenue =
-      paymentData.values.fold(0.0, (sum, value) => sum + (value ?? 0.0));
+      paymentData.values.fold(0.0, (sum, value) => sum + (value));
   final chartSections = paymentData.entries.map((entry) {
-    final value = entry.value ?? 0.0;
+    final value = entry.value;
     final percentage =
         value > 0 ? (value / totalRevenue * 100).toDouble() : 0.0;
 

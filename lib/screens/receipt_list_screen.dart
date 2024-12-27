@@ -24,11 +24,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   }
 
   static String _formatPaymentLine(AppLocalizations localizations, String paymentType, double total) {
-    final numberFormat = NumberFormat.currency(
-      locale: 'cs_CZ',
-      symbol: '',
-      decimalDigits: 2,
-    );
     String paymentText;
     switch (paymentType) {
       case 'CARD':
@@ -109,12 +104,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 (sum, receipt) => sum + (receipt['total'] ?? 0.0),
           );
 
-          final numberFormat = NumberFormat.currency(
-            locale: 'cs_CZ',
-            symbol: '',
-            decimalDigits: 2,
-          );
-
           if (totalReceipts == 0) {
             return Center(
               child: Text(localizations.translate('noReceiptsAvailable')),
@@ -188,11 +177,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                 final quantity = item['quantity'] ?? 0;
                                 final itemPrice = item['itemPrice'] ?? 0.0;
                                 final isNegative = quantity < 0 || itemPrice < 0;
-                                final numberFormat = NumberFormat.currency(
-                                  locale: 'cs_CZ',
-                                  symbol: '',
-                                  decimalDigits: 2,
-                                );
                                 return Text(
                                   '${quantity}x ${item['text']}: ${Utility.formatCurrency(itemPrice)}',
                                   style: TextStyle(
@@ -308,11 +292,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         return Comparable.compare(valueB, valueA);
       }
     });
-    provider.notifyListeners();
   }
 
   void _showFilterDialog(BuildContext context) {
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
     final localizations = AppLocalizations.of(context)!;
 
     showDialog(

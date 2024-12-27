@@ -118,7 +118,7 @@ class LocalizationService {
   /// Načte aktuální jazyk z `SharedPreferences` nebo vrátí systémový výchozí jazyk.
   static Future<Locale> getLocale() async {
     final languageCode = await StorageService.getLanguageCode();
-    return Locale(languageCode ?? WidgetsBinding.instance.window.locale.languageCode ?? 'cs');
+    return Locale(languageCode ?? WidgetsBinding.instance.window.locale.languageCode);
   }
 
   /// Uloží jazykový kód do `SharedPreferences`.

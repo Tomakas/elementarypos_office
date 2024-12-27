@@ -111,10 +111,6 @@ class ReceiptProvider extends ChangeNotifier {
     fetchReceipts();
   }
 
-  // --------------------------------------------------------------------------
-  // Nové metody pro získání TOP produktů / kategorií
-  // --------------------------------------------------------------------------
-
   /// Vrací seznam nejprodávanějších produktů podle tržby (revenue).
   /// Struktura: [{ 'name': ..., 'quantity': ..., 'revenue': ... }, ...]
   List<Map<String, dynamic>> getTopProducts({int limit = 5}) {

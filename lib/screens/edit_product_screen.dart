@@ -74,7 +74,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         return;
       }
 
-      final taxSettings = await ApiService.fetchTaxSettings(storedApiKey);
+      final taxSettings = await ApiService.fetchTaxSettings();
       setState(() {
         _taxSettings = taxSettings;
       });

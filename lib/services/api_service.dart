@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/product.dart';
+import '../services/utility_services.dart';
 
 class ApiService {
   static const String baseUrl = 'https://api.elementarypos.com/v1';
@@ -13,19 +14,22 @@ class ApiService {
   /// Generická metoda pro HTTP požadavky
   static Future<dynamic> _makeRequest(
       Uri url,
-      String apiKey, {
+      {
         String method = 'GET',
         Map<String, String>? headers,
         dynamic body,
       }) async {
     final defaultHeaders = {
       'accept': 'application/json',
-      'X-Api-Key': apiKey,
       'Content-Type': 'application/json',
     };
 
     final combinedHeaders = {...defaultHeaders, if (headers != null) ...headers};
-
+    final storedApiKey = await StorageService.getApiKey();
+    if (storedApiKey == null || storedApiKey.isEmpty) {
+      print('Error: API key not available.');
+      return;
+    }
     http.Response response;
 
     try {
@@ -41,70 +45,68 @@ class ApiService {
               .timeout(requestTimeout);
           break;
         default:
-          throw UnsupportedError('HTTP metoda $method není podporována.');
+          throw UnsupportedError('HTTP method $method is not supported.');
       }
 
       print('HTTP status: ${response.statusCode}');
-      print('HTTP odpověď: ${response.body}');
+      print('HTTP response: ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(utf8.decode(response.bodyBytes));
       } else {
         throw HttpException(
-            'Chyba při požadavku na $url: ${response.statusCode} - ${response.body}');
+            'Request error on $url: ${response.statusCode} - ${response.body}');
       }
     } on SocketException {
-      throw SocketException('Nelze se připojit k serveru.');
+      throw SocketException('Server is unavailable');
     } on HttpException catch (e) {
       throw HttpException(e.message);
     } on FormatException {
-      throw const FormatException('Chybný formát odpovědi.');
+      throw const FormatException('Wrong response format');
     } on TimeoutException {
-      throw TimeoutException('Požadavek vypršel čas.');
+      throw TimeoutException('Request timeout');
     } catch (e) {
-      throw Exception('Neznámá chyba: $e');
+      throw Exception('Unknown error: $e');
     }
   }
 
-  /// Načtení účtenek z API
+  /// Načtení účtenek
   static Future<List<dynamic>> fetchReceipts(
-      String apiKey, String dateFrom, String dateTo, int limit) async {
+      String dateFrom, String dateTo, int limit) async {
     final url = Uri.parse(
         '$baseUrl/receipt/receipts?dateFrom=$dateFrom&dateTo=$dateTo&limit=$limit');
-    print('Volání API pro účtenky: $url');
+    print('API call for Receipts: $url');
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'GET',
     );
 
     return data['receipts'] ?? [];
   }
 
-  /// Načtení kategorií z API
-  static Future<List<Map<String, dynamic>>> fetchCategories(String apiKey) async {
+  /// Načtení kategorií
+  static Future<List<Map<String, dynamic>>> fetchCategories() async {
     final url = Uri.parse('$baseUrl/category/get-categories');
-    print('Volání API pro kategorie: $url');
+    print('API call for Categories: $url');
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
     );
 
     return List<Map<String, dynamic>>.from(data['categories'] ?? []);
   }
 
-  /// Načtení produktů z API
+  /// Načtení produktů
   static Future<List<Product>> fetchProducts(
-      String apiKey, {
+      {
         String? filterCategoryId,
         String? filterCategoryName,
         int? filterColor,
       }) async {
     final url = Uri.parse('$baseUrl/item/get-sales-items');
-    print('Volání API pro produkty: $url');
+    print('API call for products: $url');
 
     final body = {
       'filterCategoryId': filterCategoryId,
@@ -114,7 +116,6 @@ class ApiService {
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: body,
     );
@@ -125,13 +126,12 @@ class ApiService {
   }
 
   /// Načtení stavu skladu
-  static Future<List<Map<String, dynamic>>> fetchActualStockData(String apiKey) async {
+  static Future<List<Map<String, dynamic>>> fetchActualStockData() async {
     final url = Uri.parse('$baseUrl/stock/get-actual-stock-data');
-    print('Volání API pro sklad: $url');
+    print('API call for stock: $url');
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
     );
 
@@ -139,67 +139,63 @@ class ApiService {
   }
 
   /// Přidání produktu
-  static Future<void> addProduct(String apiKey, Product product) async {
+  static Future<void> addProduct(Product product) async {
     final url = Uri.parse('$baseUrl/item/add-sale-item');
-    print('Přidání produktu: $url');
+    print('Adding product: $url');
 
     final productJson = product.toJson();
-    print('JSON tělo požadavku: $productJson');
+    print('JSON request body: $productJson');
 
     await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: productJson,
     );
 
-    print('Produkt úspěšně přidán.');
+    print('Product successfully added');
   }
 
   /// Úprava produktu
-  static Future<void> editProduct(String apiKey, Product product) async {
+  static Future<void> editProduct(Product product) async {
     final url = Uri.parse('$baseUrl/item/edit-sale-item');
-    print('Úprava produktu: $url');
+    print('Edit Product: $url');
 
     final productJson = product.toJson();
-    print('JSON tělo požadavku: $productJson');
+    print('JSON request body: $productJson');
 
     await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: productJson,
     );
 
-    print('Produkt úspěšně upraven.');
+    print('Product successfully edited.');
   }
 
   /// Smazání produktu
-  static Future<void> deleteProduct(String apiKey, String itemId) async {
+  static Future<void> deleteProduct(String itemId) async {
     final url = Uri.parse('$baseUrl/item/delete-sale-item');
-    print('Mazání produktu: $url');
+    print('Deleting Product: $url');
 
     final body = {'itemId': itemId};
 
 
     await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: body,
     );
 
-    print('Produkt úspěšně smazán.');
+    print('Product successfully deleted.');
   }
 
   /// Načtení daňových sazeb
-  static Future<List<Map<String, dynamic>>> fetchTaxSettings(String apiKey) async {
+  static Future<List<Map<String, dynamic>>> fetchTaxSettings() async {
     final url = Uri.parse('$baseUrl/tax/get-tax-settings');
-    print('Volání API pro daňové sazby: $url');
+    print('API call for tax rates: $url');
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
     );
 
@@ -208,13 +204,12 @@ class ApiService {
   }
 
   /// Načtení zákazníků
-  static Future<List<Map<String, dynamic>>> fetchCustomers(String apiKey) async {
+  static Future<List<Map<String, dynamic>>> fetchCustomers() async {
     final url = Uri.parse('$baseUrl/customer/get-customers');
-    print('Volání API pro zákazníky: $url');
+    print('API call for Customers: $url');
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
     );
 
@@ -223,15 +218,14 @@ class ApiService {
 
   /// Načtení detailu zákazníka
   static Future<Map<String, dynamic>> fetchCustomerDetail(
-      String apiKey, String customerId) async {
+      String customerId) async {
     final url = Uri.parse('$baseUrl/customer/get-customer');
-    print('Volání API pro detail zákazníka: $url');
+    print('API call for Customer details: $url');
 
     final body = {'customerId': customerId};
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: body,
     );
@@ -241,34 +235,32 @@ class ApiService {
 
   /// Úprava zákazníka
   static Future<void> editCustomer(
-      String apiKey, Map<String, dynamic> customerData) async {
+      Map<String, dynamic> customerData) async {
     final url = Uri.parse('$baseUrl/customer/edit-customer');
-    print('Úprava zákazníka: $url');
+    print('Edit Customer: $url');
 
     await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: customerData,
     );
 
-    print('Zákazník úspěšně upraven.');
+    print('Customer successfully edited.');
   }
 
   /// Vytvoření zákazníka
   static Future<String> createCustomer(
-      String apiKey, Map<String, dynamic> customerData) async {
+      Map<String, dynamic> customerData) async {
     final url = Uri.parse('$baseUrl/customer/create-customer');
-    print('Vytváření zákazníka: $url');
+    print('Creating Custumer: $url');
 
     final data = await _makeRequest(
       url,
-      apiKey,
       method: 'POST',
       body: customerData,
     );
 
-    print('Zákazník úspěšně vytvořen.');
+    print('Customer successfully created.');
     return data['customerId'];
   }
 }

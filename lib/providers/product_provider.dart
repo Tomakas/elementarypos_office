@@ -3,15 +3,13 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
-import '../services/utility_services.dart';
 
 class ProductProvider extends ChangeNotifier {
-  String apiKey;
   List<Product> products = [];
   List<Map<String, dynamic>> categories = [];
   bool isLoading = false;
 
-  ProductProvider(this.apiKey);
+  ProductProvider();
 
   /// Načtení kategorií
   Future<void> fetchCategories() async {
@@ -19,10 +17,7 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Dynamické načtení aktuálního API klíče
-      apiKey = await StorageService.getApiKey() ?? '';
-
-      categories = await ApiService.fetchCategories(apiKey);
+      categories = await ApiService.fetchCategories();
     } catch (e) {
       print('Chyba při načítání kategorií: $e');
     } finally {
@@ -37,11 +32,7 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Dynamické načtení aktuálního API klíče
-      apiKey = await StorageService.getApiKey() ?? '';
-
-      print('Načítání produktů s API klíčem: $apiKey');
-      products = await ApiService.fetchProducts(apiKey);
+      products = await ApiService.fetchProducts();
     } catch (e) {
       print('Chyba při načítání produktů: $e');
     } finally {
@@ -53,10 +44,7 @@ class ProductProvider extends ChangeNotifier {
   /// Přidání nového produktu
   Future<void> addProduct(Product product) async {
     try {
-      // Dynamické načtení aktuálního API klíče
-      apiKey = await StorageService.getApiKey() ?? '';
-
-      await ApiService.addProduct(apiKey, product);
+      await ApiService.addProduct(product);
       await fetchProducts();
       notifyListeners();
     } catch (e) {
@@ -67,10 +55,7 @@ class ProductProvider extends ChangeNotifier {
   /// Úprava existujícího produktu
   Future<void> editProduct(Product product) async {
     try {
-      // Dynamické načtení aktuálního API klíče
-      apiKey = await StorageService.getApiKey() ?? '';
-
-      await ApiService.editProduct(apiKey, product);
+      await ApiService.editProduct(product);
       await fetchProducts();
       notifyListeners();
     } catch (e) {
@@ -81,10 +66,7 @@ class ProductProvider extends ChangeNotifier {
   /// Smazání produktu
   Future<void> deleteProduct(String productId) async {
     try {
-      // Dynamické načtení aktuálního API klíče
-      apiKey = await StorageService.getApiKey() ?? '';
-
-      await ApiService.deleteProduct(apiKey, productId);
+      await ApiService.deleteProduct(productId);
       notifyListeners();
       await fetchProducts();
     } catch (e) {
@@ -92,7 +74,7 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
-  /// Metoda pro zajištění načtení kategorií (pokud ještě nejsou načtené)
+  /// Metoda pro zajištění načtení kategorií
   Future<void> ensureCategoriesLoaded() async {
     if (categories.isEmpty) {
       await fetchCategories();

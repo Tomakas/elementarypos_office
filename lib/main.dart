@@ -30,13 +30,11 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late String? _apiKey;
   late Locale _locale;
 
   @override
   void initState() {
     super.initState();
-    _apiKey = widget.initialApiKey;
     _locale = widget.initialLocale;
   }
 
@@ -50,9 +48,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ReceiptProvider(_apiKey)),
-        ChangeNotifierProvider(create: (_) => ProductProvider(_apiKey ?? '')),
-        ChangeNotifierProvider(create: (_) => CustomerProvider(_apiKey)),
+        ChangeNotifierProvider(create: (_) => ReceiptProvider()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => CustomerProvider()),
 
       ],
       child: MaterialApp(

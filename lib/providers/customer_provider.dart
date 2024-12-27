@@ -2,32 +2,23 @@
 
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../services/utility_services.dart';
 import '../models/customer.dart';
 
 class CustomerProvider extends ChangeNotifier {
-  String? apiKey;
   List<Customer> customers = [];
   Map<String, dynamic>? selectedCustomer;
   bool isLoading = false;
 
-  CustomerProvider(this.apiKey);
+  CustomerProvider();
 
-  /// Načtení seznamu zákazníků z API
+  /// Načtení seznamu zákazníků
   Future<void> fetchCustomers() async {
     isLoading = true;
     notifyListeners();
 
     try {
-      apiKey = await StorageService.getApiKey();
-      if (apiKey == null || apiKey!.isEmpty) {
-        print('Chyba: API klíč není zadán.');
-        return;
-      }
-
-      // Načtení dat z API
       final List<Map<String, dynamic>> response =
-      await ApiService.fetchCustomers(apiKey!);
+      await ApiService.fetchCustomers();
 
       // Převod z List<Map<String, dynamic>> na List<Customer>
       customers = response.map<Customer>((json) => Customer.fromJson(json)).toList();
@@ -48,15 +39,10 @@ class CustomerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      apiKey = await StorageService.getApiKey();
-      if (apiKey == null || apiKey!.isEmpty) {
-        print('Chyba: API klíč není zadán.');
-        return;
-      }
 
       print('Načítání detailu zákazníka s ID: $customerId');
       selectedCustomer =
-          await ApiService.fetchCustomerDetail(apiKey!, customerId);
+          await ApiService.fetchCustomerDetail(customerId);
 
       print('Detail zákazníka: $selectedCustomer');
     } catch (e) {
@@ -70,15 +56,9 @@ class CustomerProvider extends ChangeNotifier {
   /// Vytvoření nového zákazníka
   Future<void> createCustomer(Map<String, dynamic> customerData) async {
     try {
-      apiKey = await StorageService.getApiKey();
-      if (apiKey == null || apiKey!.isEmpty) {
-        print('Chyba: API klíč není zadán.');
-        return;
-      }
-
       print('Vytváření nového zákazníka');
       String customerId =
-          await ApiService.createCustomer(apiKey!, customerData);
+          await ApiService.createCustomer(customerData);
       print('Nový zákazník vytvořen s ID: $customerId');
 
       await fetchCustomers(); // Aktualizace seznamu zákazníků
@@ -90,25 +70,12 @@ class CustomerProvider extends ChangeNotifier {
   /// Úprava existujícího zákazníka
   Future<void> editCustomer(Map<String, dynamic> customerData) async {
     try {
-      apiKey = await StorageService.getApiKey();
-      if (apiKey == null || apiKey!.isEmpty) {
-        print('Chyba: API klíč není zadán.');
-        return;
-      }
-
       print('Úprava zákazníka s ID: ${customerData['customerId']}');
-      await ApiService.editCustomer(apiKey!, customerData);
+      await ApiService.editCustomer(customerData);
 
       await fetchCustomers(); // Aktualizace seznamu zákazníků
     } catch (e) {
       print('Chyba při úpravě zákazníka: $e');
     }
-  }
-
-  /// Nastavení API klíče a načtení zákazníků
-  void setApiKey(String newApiKey) {
-    apiKey = newApiKey;
-    notifyListeners();
-    fetchCustomers();
   }
 }

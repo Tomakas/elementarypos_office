@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
-import '../services/utility_services.dart';
-import '../providers/product_provider.dart'; // Důležité pro getTopCategories
+import '../providers/product_provider.dart';
 
 class ReceiptProvider extends ChangeNotifier {
-  String? apiKey;
   List receipts = [];
   bool isLoading = false;
 
-  // Rozsah dat pro filtrování (zde jej ukládáme pro fetchReceipts)
+  // Rozsah dat pro filtrování
   DateTimeRange? dateRange;
 
   // Filtrační parametry pro typ platby a slevy
@@ -19,7 +17,7 @@ class ReceiptProvider extends ChangeNotifier {
   bool showOther = true;
   bool showWithDiscount = false;
 
-  ReceiptProvider(this.apiKey);
+  ReceiptProvider();
 
   /// Celkový příjem z účtenek
   double get totalRevenue {
@@ -31,17 +29,11 @@ class ReceiptProvider extends ChangeNotifier {
     return receipts.isNotEmpty ? totalRevenue / receipts.length : 0.0;
   }
 
-  /// Načtení účtenek z API
+  /// Načtení účtenek
   Future<void> fetchReceipts() async {
     isLoading = true;
     notifyListeners();
     try {
-      // Dynamické načtení aktuálního API klíče
-      apiKey = await StorageService.getApiKey();
-      if (apiKey == null || apiKey!.isEmpty) {
-        print('Chyba: API klíč není zadán.');
-        return;
-      }
       // Získání rozsahu dat
       String dateFrom = dateRange != null
           ? DateFormat('yyyy-MM-dd').format(dateRange!.start)
@@ -51,7 +43,7 @@ class ReceiptProvider extends ChangeNotifier {
           : DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       print('Načítání účtenek, datum od: $dateFrom, do: $dateTo');
-      List allReceipts = await ApiService.fetchReceipts(apiKey!, dateFrom, dateTo, 500);
+      List allReceipts = await ApiService.fetchReceipts(dateFrom, dateTo, 500);
 
       // Filtrace účtenek podle filtračních parametrů
       receipts = allReceipts.where((receipt) {
@@ -68,7 +60,6 @@ class ReceiptProvider extends ChangeNotifier {
             return price is num && price < 0;
           });
         }
-
         // Pokud showWithDiscount == true, vyžadujeme, aby tam byla sleva
         return matchesPayment && (!showWithDiscount || hasDiscount);
       }).toList();
@@ -104,13 +95,6 @@ class ReceiptProvider extends ChangeNotifier {
     fetchReceipts();
   }
 
-  /// Nastavení API klíče (používá se při přímé aktualizaci bez načítání z úložiště)
-  void setApiKey(String newApiKey) {
-    apiKey = newApiKey;
-    notifyListeners();
-    fetchReceipts();
-  }
-
   /// Vrací seznam nejprodávanějších produktů podle tržby (revenue).
   /// Struktura: [{ 'name': ..., 'quantity': ..., 'revenue': ... }, ...]
   List<Map<String, dynamic>> getTopProducts({int limit = 5}) {
@@ -141,7 +125,6 @@ class ReceiptProvider extends ChangeNotifier {
 
   /// Vrací seznam nejprodávanějších kategorií podle tržby (revenue).
   /// Struktura: [{ 'name': ..., 'quantity': ..., 'revenue': ... }, ...]
-  /// K zjištění názvu kategorie (product.categoryName) využívá ProductProvider.
   List<Map<String, dynamic>> getTopCategories({
     int limit = 5,
     required ProductProvider productProvider,

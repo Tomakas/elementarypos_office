@@ -88,7 +88,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       return;
     }
     try {
-      final stockList = await ApiService.fetchActualStockData(storedApiKey);
+      final stockList = await ApiService.fetchActualStockData();
       setState(() {
         stockData = {
           for (var item in stockList)

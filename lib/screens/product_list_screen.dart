@@ -208,8 +208,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
           }
         },
         backgroundColor: Colors.grey[850],
-        child: const Icon(Icons.add, color: Colors.white),
         tooltip: localizations.translate('addNewProduct'),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

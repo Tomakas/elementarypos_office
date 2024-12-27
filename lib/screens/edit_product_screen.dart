@@ -255,7 +255,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
             final percent = (tax['percent'] ?? 0) * 100;
             return DropdownMenuItem<String>(
               value: tax['taxId'],
-              child: Text('${tax['name']} (${percent}%)'),
+              child: Text('${tax['name']} ($percent%)'),
             );
           }).toList(),
           onChanged: (value) {

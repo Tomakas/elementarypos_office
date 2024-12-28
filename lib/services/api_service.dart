@@ -12,12 +12,19 @@ class ApiService {
   static const Duration requestTimeout = Duration(seconds: 10);
 
   /// Generická metoda pro HTTP požadavky
-  static Future<dynamic> _makeRequest(
+static Future<dynamic> _makeRequest(
     Uri url, {
     String method = 'GET',
     Map<String, String>? headers,
     dynamic body,
-  }) async {
+}) async {
+    final storedApiKey = await StorageService.getApiKey();
+    
+    if (storedApiKey == null || storedApiKey.isEmpty) {
+   print('Error: API key not available.');
+   // Zde by mělo být zpracování chyby - např. zobrazení chybové hlášky, přesměrování na přihlašovací stránku, atd.
+  }
+
     final defaultHeaders = {
       'accept': 'application/json',
       'Content-Type': 'application/json',
@@ -25,52 +32,49 @@ class ApiService {
 
     final combinedHeaders = {
       ...defaultHeaders,
-      if (headers != null) ...headers
+      if (headers != null) ...headers,
+      if (storedApiKey != null && storedApiKey.isNotEmpty) 'X-Api-Key': storedApiKey, // 
     };
-    final storedApiKey = await StorageService.getApiKey();
-    if (storedApiKey == null || storedApiKey.isEmpty) {
-      print('Error: API key not available.');
-      return;
-    }
+
     http.Response response;
 
     try {
-      switch (method.toUpperCase()) {
-        case 'GET':
-          response = await http
-              .get(url, headers: combinedHeaders)
-              .timeout(requestTimeout);
-          break;
-        case 'POST':
-          response = await http
-              .post(url, headers: combinedHeaders, body: json.encode(body))
-              .timeout(requestTimeout);
-          break;
-        default:
-          throw UnsupportedError('HTTP method $method is not supported.');
-      }
+        switch (method.toUpperCase()) {
+            case 'GET':
+                response = await http
+                    .get(url, headers: combinedHeaders)
+                    .timeout(requestTimeout);
+                break;
+            case 'POST':
+                response = await http
+                    .post(url, headers: combinedHeaders, body: json.encode(body))
+                    .timeout(requestTimeout);
+                break;
+            default:
+                throw UnsupportedError('HTTP method $method is not supported.');
+        }
 
-      print('HTTP status: ${response.statusCode}');
-      print('HTTP response: ${response.body}');
+        print('HTTP status: ${response.statusCode}');  // Ponecháno z původního kódu
+        print('HTTP response: ${response.body}');      // Ponecháno z původního kódu
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return json.decode(utf8.decode(response.bodyBytes));
-      } else {
-        throw HttpException(
-            'Request error on $url: ${response.statusCode} - ${response.body}');
-      }
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            return json.decode(utf8.decode(response.bodyBytes));
+        } else {
+            throw HttpException(
+                'Request error on $url: ${response.statusCode} - ${response.body}');
+        }
     } on SocketException {
-      throw SocketException('Server is unavailable');
+        throw SocketException('Server is unavailable');
     } on HttpException catch (e) {
-      throw HttpException(e.message);
+        throw HttpException(e.message);
     } on FormatException {
-      throw const FormatException('Wrong response format');
+        throw const FormatException('Wrong response format');
     } on TimeoutException {
-      throw TimeoutException('Request timeout');
+        throw TimeoutException('Request timeout');
     } catch (e) {
-      throw Exception('Unknown error: $e');
+        throw Exception('Unknown error: $e');
     }
-  }
+}
 
   /// Načtení účtenek
   static Future<List<dynamic>> fetchReceipts(

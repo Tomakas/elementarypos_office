@@ -12,6 +12,7 @@ class ProductWidget extends StatefulWidget {
   final double? stockQuantity;
   final bool isExpanded;
   final VoidCallback onExpand;
+  final String? highlightText;
 
   const ProductWidget({
     super.key,
@@ -20,6 +21,7 @@ class ProductWidget extends StatefulWidget {
     this.stockQuantity,
     required this.isExpanded,
     required this.onExpand,
+    this.highlightText,
   });
 
   @override
@@ -83,26 +85,27 @@ class _ProductWidgetState extends State<ProductWidget> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                widget.product.itemName,
-                                style: TextStyle(
+                              ExpandableText( // Použití ExpandableText
+                                text: widget.product.itemName,
+                                highlight: widget.highlightText,
+                                defaultTextStyle: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  decoration: widget.product.onSale
-                                      ? TextDecoration.none
-                                      : TextDecoration.lineThrough,
+                                  decoration: widget.product.onSale ? TextDecoration.none : TextDecoration.lineThrough,
+                                  color: Colors.black,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                '${localizations.translate("category")}: $categoryName',
-                                style: const TextStyle(color: Colors.grey),
+                              ExpandableText( // Použití ExpandableText
+                                text: '${localizations.translate("category")}: $categoryName',
+                                highlight: widget.highlightText,
+                                defaultTextStyle: const TextStyle(color: Colors.grey, fontSize: 16),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                '${localizations.translate("price")}: '
-                                    '${Utility.formatCurrency(widget.product.price)}',
-                                style: const TextStyle(fontSize: 16),
+                              ExpandableText( // Použití ExpandableText
+                                text: '${localizations.translate("price")}: ${Utility.formatCurrency(widget.product.price)}',
+                                highlight: widget.highlightText,
+                                defaultTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
                               ),
                             ],
                           ),
@@ -125,7 +128,8 @@ class _ProductWidgetState extends State<ProductWidget> {
                                       ),
                                     ),
                                     TextSpan(
-                                      text: Utility.formatNumber(widget.stockQuantity!),                                      style: TextStyle(
+                                      text: Utility.formatNumber(widget.stockQuantity!),
+                                      style: TextStyle(
                                         color: (widget.stockQuantity! <= 0)
                                             ? Colors.red
                                             : Colors.black,
@@ -333,6 +337,55 @@ class _ProductWidgetState extends State<ProductWidget> {
           ],
         );
       },
+    );
+  }
+}
+
+// Pomocný widget pro obalení textu a zajištění zvýraznění
+class ExpandableText extends StatelessWidget {
+  final String text;
+  final String? highlight;
+  final TextStyle defaultTextStyle;
+
+  const ExpandableText({
+    Key? key,
+    required this.text,
+    this.highlight,
+    required this.defaultTextStyle,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (highlight == null || highlight!.isEmpty) {
+      return Text(text, style: defaultTextStyle);
+    }
+
+    final normalizedText = Utility.normalizeString(text.toLowerCase());
+    final normalizedHighlight = Utility.normalizeString(highlight!.toLowerCase());
+
+    List<TextSpan> spans = [];
+    int start = 0;
+    while (true) {
+      final index = normalizedText.indexOf(normalizedHighlight, start);
+      if (index == -1) {
+        spans.add(TextSpan(text: text.substring(start)));
+        break;
+      }
+      if (index > start) {
+        spans.add(TextSpan(text: text.substring(start, index)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(index, index + highlight!.length),
+        style: const TextStyle(backgroundColor: Colors.yellow),
+      ));
+      start = index + highlight!.length;
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: defaultTextStyle,
+        children: spans,
+      ),
     );
   }
 }

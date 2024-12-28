@@ -21,7 +21,8 @@ class ReceiptProvider extends ChangeNotifier {
 
   /// Celkový příjem z účtenek
   double get totalRevenue {
-    return receipts.fold(0.0, (sum, receipt) => sum + (receipt['total'] as num).toDouble());
+    return receipts.fold(
+        0.0, (sum, receipt) => sum + (receipt['total'] as num).toDouble());
   }
 
   /// Průměrná hodnota účtenky
@@ -42,7 +43,7 @@ class ReceiptProvider extends ChangeNotifier {
           ? DateFormat('yyyy-MM-dd').format(dateRange!.end)
           : DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-      print('Načítání účtenek, datum od: $dateFrom, do: $dateTo');
+      print('Loading Receipts, date from: $dateFrom, to: $dateTo');
       List allReceipts = await ApiService.fetchReceipts(dateFrom, dateTo, 500);
 
       // Filtrace účtenek podle filtračních parametrů
@@ -64,9 +65,9 @@ class ReceiptProvider extends ChangeNotifier {
         return matchesPayment && (!showWithDiscount || hasDiscount);
       }).toList();
 
-      print('Filtrované účtenky: ${receipts.length}');
+      print('Filtered Receipts: ${receipts.length}');
     } catch (e) {
-      print('Chyba při načítání účtenek: $e');
+      print('Error while getting Receipts: $e');
     } finally {
       isLoading = false;
       notifyListeners();
@@ -112,8 +113,10 @@ class ReceiptProvider extends ChangeNotifier {
               'revenue': 0.0,
             };
           }
-          productData[productName]!['quantity'] += (item['quantity'] as num).toDouble();
-          productData[productName]!['revenue'] += (item['priceToPay'] as num).toDouble();
+          productData[productName]!['quantity'] +=
+              (item['quantity'] as num).toDouble();
+          productData[productName]!['revenue'] +=
+              (item['priceToPay'] as num).toDouble();
         }
       }
     }

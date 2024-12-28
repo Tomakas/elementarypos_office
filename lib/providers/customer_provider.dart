@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../models/customer.dart';
+import '../models/customer_model.dart';
 
 class CustomerProvider extends ChangeNotifier {
   List<Customer> customers = [];
@@ -18,20 +18,20 @@ class CustomerProvider extends ChangeNotifier {
 
     try {
       final List<Map<String, dynamic>> response =
-      await ApiService.fetchCustomers();
+          await ApiService.fetchCustomers();
 
       // Převod z List<Map<String, dynamic>> na List<Customer>
-      customers = response.map<Customer>((json) => Customer.fromJson(json)).toList();
+      customers =
+          response.map<Customer>((json) => Customer.fromJson(json)).toList();
 
-      print('Načteno zákazníků: ${customers.length}');
+      print('Loaded Customers: ${customers.length}');
     } catch (e) {
-      print('Chyba při načítání zákazníků: $e');
+      print('Error while loading (customers): $e');
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
-
 
   /// Načtení detailu konkrétního zákazníka
   Future<void> fetchCustomerDetail(String customerId) async {
@@ -39,14 +39,12 @@ class CustomerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('Loading details of Customer with ID: $customerId');
+      selectedCustomer = await ApiService.fetchCustomerDetail(customerId);
 
-      print('Načítání detailu zákazníka s ID: $customerId');
-      selectedCustomer =
-          await ApiService.fetchCustomerDetail(customerId);
-
-      print('Detail zákazníka: $selectedCustomer');
+      print('Details of Customer: $selectedCustomer');
     } catch (e) {
-      print('Chyba při načítání detailu zákazníka: $e');
+      print('Error while loading customer details: $e');
     } finally {
       isLoading = false;
       notifyListeners();
@@ -56,14 +54,13 @@ class CustomerProvider extends ChangeNotifier {
   /// Vytvoření nového zákazníka
   Future<void> createCustomer(Map<String, dynamic> customerData) async {
     try {
-      print('Vytváření nového zákazníka');
-      String customerId =
-          await ApiService.createCustomer(customerData);
-      print('Nový zákazník vytvořen s ID: $customerId');
+      print('Creating of new Customer');
+      String customerId = await ApiService.createCustomer(customerData);
+      print('New customer created with ID: $customerId');
 
       await fetchCustomers(); // Aktualizace seznamu zákazníků
     } catch (e) {
-      print('Chyba při vytváření zákazníka: $e');
+      print('Error while creating Customer: $e');
     }
   }
 
@@ -75,7 +72,7 @@ class CustomerProvider extends ChangeNotifier {
 
       await fetchCustomers(); // Aktualizace seznamu zákazníků
     } catch (e) {
-      print('Chyba při úpravě zákazníka: $e');
+      print('Error while editing Customer: $e');
     }
   }
 }

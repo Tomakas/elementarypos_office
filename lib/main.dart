@@ -51,7 +51,6 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => ReceiptProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
-
       ],
       child: MaterialApp(
         title: 'EPOS Office',

@@ -151,7 +151,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                   ),
                 ),
               ),
-              // ListView pro zobrazení účtenek
+              // ListView
               Expanded(
                 child: ListView.builder(
                   itemCount: provider.receipts.length,

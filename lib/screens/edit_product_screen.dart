@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
-import '../models/product.dart';
+import '../models/product_model.dart';
 import '../services/api_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/utility_services.dart'; // Důležité pro načtení API klíče ze StorageService
@@ -70,7 +70,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     try {
       final storedApiKey = await StorageService.getApiKey();
       if (storedApiKey == null || storedApiKey.isEmpty) {
-        print('Error: API klíč není k dispozici.');
+        print('Error: API key not available.');
         return;
       }
 
@@ -123,9 +123,12 @@ class _EditProductScreenState extends State<EditProductScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTextField(localizations.translate('productName'), _nameController),
+              _buildTextField(
+                  localizations.translate('productName'), _nameController),
               const SizedBox(height: 16),
-              _buildTextField(localizations.translate('price'), _priceController, isNumber: true),
+              _buildTextField(
+                  localizations.translate('price'), _priceController,
+                  isNumber: true),
               const SizedBox(height: 16),
               _buildCategoryDropdown(localizations),
               const SizedBox(height: 16),
@@ -133,14 +136,16 @@ class _EditProductScreenState extends State<EditProductScreen> {
               const SizedBox(height: 16),
               _buildOnSaleSwitch(localizations),
               const SizedBox(height: 16),
-              // SKU lze nyní zadávat jako běžný text (může obsahovat písmena, symboly atd.)
               _buildTextField(localizations.translate('sku'), _skuController),
               const SizedBox(height: 16),
-              _buildTextField(localizations.translate('productCode'), _codeController, isNumber: true),
+              _buildTextField(
+                  localizations.translate('productCode'), _codeController,
+                  isNumber: true),
               const SizedBox(height: 16),
               _buildTaxDropdown(localizations),
               const SizedBox(height: 16),
-              _buildTextField(localizations.translate('note'), _noteController, isMultiline: true),
+              _buildTextField(localizations.translate('note'), _noteController,
+                  isMultiline: true),
             ],
           ),
         ),
@@ -172,7 +177,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(localizations.translate('category'), style: const TextStyle(fontSize: 16)),
+        Text(localizations.translate('category'),
+            style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
         DropdownButton<String>(
           value: _selectedCategoryId,
@@ -208,7 +214,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(localizations.translate('color'), style: const TextStyle(fontSize: 16)),
+        Text(localizations.translate('color'),
+            style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -245,7 +252,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(localizations.translate('taxRate'), style: const TextStyle(fontSize: 16)),
+        Text(localizations.translate('taxRate'),
+            style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
         DropdownButton<String>(
           value: _selectedTaxId,
@@ -272,7 +280,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(localizations.translate('onSale'), style: const TextStyle(fontSize: 16)),
+        Text(localizations.translate('onSale'),
+            style: const TextStyle(fontSize: 16)),
         Switch(
           value: _onSale,
           onChanged: (value) {
@@ -308,7 +317,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       itemId: itemId,
       itemName: _nameController.text,
       price: double.parse(_priceController.text),
-      sku: _skuController.text,   // SKU jako string
+      sku: _skuController.text,
       code: int.tryParse(_codeController.text) ?? 0,
       note: _noteController.text,
       categoryId: _selectedCategoryId!,
@@ -320,7 +329,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
       onSale: _onSale,
     );
 
-    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final productProvider =
+        Provider.of<ProductProvider>(context, listen: false);
     if (isCreating) {
       // Vytvoření nového produktu
       await productProvider.addProduct(newProduct);
@@ -329,6 +339,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       await productProvider.editProduct(newProduct);
     }
 
-    Navigator.of(context).pop(true); // Vrátíme se s hodnotou true => "došlo ke změně"
+    Navigator.of(context)
+        .pop(true); // Vrátíme se s hodnotou true => "došlo ke změně"
   }
 }

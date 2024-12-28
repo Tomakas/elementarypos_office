@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../models/product.dart';
+import '../models/product_model.dart';
 import '../services/utility_services.dart';
 
 class ApiService {
@@ -13,18 +13,20 @@ class ApiService {
 
   /// Generická metoda pro HTTP požadavky
   static Future<dynamic> _makeRequest(
-      Uri url,
-      {
-        String method = 'GET',
-        Map<String, String>? headers,
-        dynamic body,
-      }) async {
+    Uri url, {
+    String method = 'GET',
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
     final defaultHeaders = {
       'accept': 'application/json',
       'Content-Type': 'application/json',
     };
 
-    final combinedHeaders = {...defaultHeaders, if (headers != null) ...headers};
+    final combinedHeaders = {
+      ...defaultHeaders,
+      if (headers != null) ...headers
+    };
     final storedApiKey = await StorageService.getApiKey();
     if (storedApiKey == null || storedApiKey.isEmpty) {
       print('Error: API key not available.');
@@ -99,12 +101,11 @@ class ApiService {
   }
 
   /// Načtení produktů
-  static Future<List<Product>> fetchProducts(
-      {
-        String? filterCategoryId,
-        String? filterCategoryName,
-        int? filterColor,
-      }) async {
+  static Future<List<Product>> fetchProducts({
+    String? filterCategoryId,
+    String? filterCategoryName,
+    int? filterColor,
+  }) async {
     final url = Uri.parse('$baseUrl/item/get-sales-items');
     print('API call for products: $url');
 
@@ -179,7 +180,6 @@ class ApiService {
 
     final body = {'itemId': itemId};
 
-
     await _makeRequest(
       url,
       method: 'POST',
@@ -234,8 +234,7 @@ class ApiService {
   }
 
   /// Úprava zákazníka
-  static Future<void> editCustomer(
-      Map<String, dynamic> customerData) async {
+  static Future<void> editCustomer(Map<String, dynamic> customerData) async {
     final url = Uri.parse('$baseUrl/customer/edit-customer');
     print('Edit Customer: $url');
 

@@ -51,7 +51,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _savedApiKey = newApiKey;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.translate('saveApiKey'))),
+      SnackBar(
+          content: Text(AppLocalizations.of(context)!.translate('saveApiKey'))),
     );
   }
 
@@ -121,10 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: _languageOptions.entries
                   .map(
                     (entry) => DropdownMenuItem<String>(
-                  value: entry.key,
-                  child: Text(entry.value),
-                ),
-              )
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
                   .toList(),
               onChanged: _changeLanguage,
             ),

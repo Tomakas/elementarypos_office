@@ -16,14 +16,14 @@ class StorageService {
   static Future<void> saveApiKey(String apiKey) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_apiKeyKey, apiKey);
-    print('API klíč byl uložen: $apiKey');
+    print('API key was saved: $apiKey');
   }
 
   /// Načte API klíč z `SharedPreferences`.
   static Future<String?> getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     final apiKey = prefs.getString(_apiKeyKey);
-    print('Načtený API klíč: $apiKey');
+    print('Not valid API key: $apiKey');
     return apiKey;
   }
 
@@ -31,31 +31,32 @@ class StorageService {
   static Future<void> clearApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_apiKeyKey);
-    print('API klíč byl smazán.');
+    print('API key was deleted.');
   }
 
   /// Uloží jazykový kód do `SharedPreferences`.
   static Future<void> saveLanguageCode(String languageCode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageCodeKey, languageCode);
-    print('Jazykový kód byl uložen: $languageCode');
+    print('Saved language code: $languageCode');
   }
 
   /// Načte jazykový kód z `SharedPreferences`.
   static Future<String?> getLanguageCode() async {
     final prefs = await SharedPreferences.getInstance();
     final languageCode = prefs.getString(_languageCodeKey);
-    print('Načtený jazykový kód: $languageCode');
+    print('Loaded language code: $languageCode');
     return languageCode;
   }
 
   /// Uloží pořadí widgetů na dashboardu do `SharedPreferences`.
-  static Future<void> saveDashboardWidgetsOrder(List<DashboardWidgetModel> widgets) async {
+  static Future<void> saveDashboardWidgetsOrder(
+      List<DashboardWidgetModel> widgets) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonList = widgets.map((w) => w.toJson()).toList();
     final jsonString = json.encode(jsonList);
     await prefs.setString(_dashboardWidgetsKey, jsonString);
-    print('Pořadí widgetů bylo uloženo: $jsonString');
+    print('Widget order saved: $jsonString');
   }
 
   /// Načte pořadí widgetů z `SharedPreferences`.
@@ -67,8 +68,9 @@ class StorageService {
       return [];
     }
     final List<dynamic> jsonList = json.decode(jsonString);
-    final widgets = jsonList.map((json) => DashboardWidgetModel.fromJson(json)).toList();
-    print('Načtené widgety: $widgets');
+    final widgets =
+        jsonList.map((json) => DashboardWidgetModel.fromJson(json)).toList();
+    print('Loaded widgets: $widgets');
     return widgets;
   }
 
@@ -76,7 +78,7 @@ class StorageService {
   static Future<void> clearDashboardWidgets() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_dashboardWidgetsKey);
-    print('Widgety na dashboardu byly smazány.');
+    print('Widgets on dashboard were deleted.');
   }
 }
 
@@ -85,16 +87,14 @@ class Utility {
   static String formatNumber(num value, {int decimals = 2, String? locale}) {
     final usedLocale = locale ?? 'cs_CZ';
     final format = NumberFormat('#,##0.##', usedLocale);
-    // Pokud potřebujete fixní počet desetinných míst, upravte podle potřeby
-    // např. NumberFormat('###,###.00', usedLocale)
+    // eg. NumberFormat('###,###.00', usedLocale)
     return format.format(value);
   }
 
   /// Metoda pro formátování hodnoty v měně.
-  static String formatCurrency(num value, {String? currencySymbol, String? locale, int decimals = 2}) {
+  static String formatCurrency(num value,
+      {String? currencySymbol, String? locale, int decimals = 2}) {
     final usedLocale = locale ?? 'cs_CZ';
-    // Pokud nechcete vyloženě currency, lze použít NumberFormat.simpleCurrency
-    // Ale s currency() získáte větší kontrolu nad parametry:
     final format = NumberFormat.currency(
       locale: usedLocale,
       symbol: currencySymbol ?? 'Kč',
@@ -114,19 +114,42 @@ class Utility {
   }
 }
 
+//--------------------------------------------------
+//////////// nadbytečné ke smazání
+//--------------------------------------------------
+
+class XXXItemSummary {
+  String name;
+  int quantity;
+  double totalPrice;
+
+  XXXItemSummary({required this.name, this.quantity = 0, this.totalPrice = 0.0});
+
+  void add(int quantity, double price) {
+    this.quantity += quantity;
+    totalPrice += price;
+  }
+}
+
+//--------------------------------------------------
+//////////// nadbytečné ke smazání
+//--------------------------------------------------
+
+
 class LocalizationService {
   /// Načte aktuální jazyk z `SharedPreferences` nebo vrátí systémový výchozí jazyk.
   static Future<Locale> getLocale() async {
     final languageCode = await StorageService.getLanguageCode();
-    return Locale(languageCode ?? WidgetsBinding.instance.window.locale.languageCode);
+    return Locale(
+        languageCode ?? WidgetsBinding.instance.window.locale.languageCode);
   }
 
   /// Uloží jazykový kód do `SharedPreferences`.
   static Future<void> saveLanguageCode(String languageCode) async {
     await StorageService.saveLanguageCode(languageCode);
   }
-
 }
+
 // Preferences helper class for storing and retrieving filter preferences
 class PreferencesHelper {
   static const String sortCriteriaKey = 'sortCriteria';
@@ -160,5 +183,4 @@ class PreferencesHelper {
       'currentCategoryId': prefs.getString(currentCategoryKey) ?? '',
     };
   }
-
 }

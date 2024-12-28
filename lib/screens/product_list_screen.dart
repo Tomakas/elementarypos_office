@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
-import '../models/product.dart';
+import '../models/product_model.dart';
 import '../widgets/product_widget.dart';
 import '../services/api_service.dart';
 import '../screens/edit_product_screen.dart';
@@ -82,11 +82,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   void _loadStockData() async {
-    final storedApiKey = await StorageService.getApiKey();
-    if (storedApiKey == null || storedApiKey.isEmpty) {
-      print('Error: API klíč není k dispozici.');
-      return;
-    }
     try {
       final stockList = await ApiService.fetchActualStockData();
       setState(() {
@@ -138,59 +133,60 @@ class _ProductListScreenState extends State<ProductListScreen> {
         ],
         bottom: isSearchActive
             ? PreferredSize(
-          preferredSize: const Size.fromHeight(48.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: localizations.translate('searchForProduct'),
-                border: const OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-              ),
-              onChanged: (value) => _applySearch(value, productProvider),
-            ),
-          ),
-        )
+                preferredSize: const Size.fromHeight(48.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: localizations.translate('searchForProduct'),
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16.0),
+                    ),
+                    onChanged: (value) => _applySearch(value, productProvider),
+                  ),
+                ),
+              )
             : null,
       ),
       body: productProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          Expanded(
-            child: filteredProducts.isEmpty
-                ? Center(
-              child: Text(
-                localizations.translate('noProductsAvailable'),
-                style: const TextStyle(fontSize: 16),
-              ),
-            )
-                : ListView.builder(
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
-                return ProductWidget(
-                  product: product,
-                  categories: productProvider.categories,
-                  stockQuantity: stockData[product.sku],
-                  isExpanded: expandedProductId == product.itemId,
-                  onExpand: () {
-                    setState(() {
-                      if (expandedProductId == product.itemId) {
-                        expandedProductId = null;
-                      } else {
-                        expandedProductId = product.itemId;
-                      }
-                    });
-                  },
-                );
-              },
+              children: [
+                Expanded(
+                  child: filteredProducts.isEmpty
+                      ? Center(
+                          child: Text(
+                            localizations.translate('noProductsAvailable'),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = filteredProducts[index];
+                            return ProductWidget(
+                              product: product,
+                              categories: productProvider.categories,
+                              stockQuantity: stockData[product.sku],
+                              isExpanded: expandedProductId == product.itemId,
+                              onExpand: () {
+                                setState(() {
+                                  if (expandedProductId == product.itemId) {
+                                    expandedProductId = null;
+                                  } else {
+                                    expandedProductId = product.itemId;
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await productProvider.fetchCategories();
@@ -375,15 +371,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _applyAllFiltersAndSorting(ProductProvider provider) {
     final filtered = provider.products.where((product) {
-      final matchesCategory = (currentCategoryId == null || currentCategoryId!.isEmpty)
-          || product.categoryId == currentCategoryId;
+      final matchesCategory =
+          (currentCategoryId == null || currentCategoryId!.isEmpty) ||
+              product.categoryId == currentCategoryId;
       final matchesOnSale = !showOnlyOnSale || product.onSale;
-      final matchesInStock = !showOnlyInStock
-          || (product.sku != null && stockData[product.sku] != null && stockData[product.sku]! > 0);
-      final matchesSearch = searchText.isEmpty
-          || Utility.normalizeString(product.itemName.toLowerCase())
+      final matchesInStock = !showOnlyInStock ||
+          (product.sku != null &&
+              stockData[product.sku] != null &&
+              stockData[product.sku]! > 0);
+      final matchesSearch = searchText.isEmpty ||
+          Utility.normalizeString(product.itemName.toLowerCase())
               .contains(Utility.normalizeString(searchText.toLowerCase()));
-      return matchesCategory && matchesOnSale && matchesInStock && matchesSearch;
+      return matchesCategory &&
+          matchesOnSale &&
+          matchesInStock &&
+          matchesSearch;
     }).toList();
 
     filtered.sort((a, b) {

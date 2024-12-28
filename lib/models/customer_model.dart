@@ -1,10 +1,10 @@
-//lib/models/customer.dart
+//lib/models/customer_model.dart
 
 class Customer {
   final String customerId;
   final String name;
   final String email;
-  final String? phone; // Telefon je nepovinný
+  final String? phone;
 
   Customer({
     required this.customerId,
@@ -17,8 +17,8 @@ class Customer {
   factory Customer.fromJson(Map<String, dynamic> json) {
     return Customer(
       customerId: json['customerId'] ?? '',
-      name: json['name'] ?? 'Neznámý zákazník',
-      email: json['email'] ?? 'Neznámý email',
+      name: json['name'] ?? 'Unknown Customer',
+      email: json['email'] ?? 'Unknown email',
       phone: json['phone'],
     );
   }

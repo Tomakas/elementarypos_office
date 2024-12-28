@@ -27,8 +27,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadData() async {
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final receiptProvider =
+        Provider.of<ReceiptProvider>(context, listen: false);
+    final productProvider =
+        Provider.of<ProductProvider>(context, listen: false);
 
     final today = DateTime.now();
     // Nastavíme dateRange na aktuální den
@@ -39,18 +41,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
 
-    await productProvider.fetchProducts();  // Nejdříve produkty
-    await receiptProvider.fetchReceipts();  // Pak účtenky
+    await productProvider.fetchProducts(); // Nejdříve produkty
+    await receiptProvider.fetchReceipts(); // Pak účtenky
 
-    List<model.DashboardWidgetModel> loadedWidgets = await StorageService.getDashboardWidgetsOrder();
+    List<model.DashboardWidgetModel> loadedWidgets =
+        await StorageService.getDashboardWidgetsOrder();
     if (loadedWidgets.isEmpty) {
       loadedWidgets = [
         model.DashboardWidgetModel(id: const Uuid().v4(), type: 'summary'),
         model.DashboardWidgetModel(id: const Uuid().v4(), type: 'top_products'),
-        model.DashboardWidgetModel(id: const Uuid().v4(), type: 'top_categories'),
+        model.DashboardWidgetModel(
+            id: const Uuid().v4(), type: 'top_categories'),
         model.DashboardWidgetModel(id: const Uuid().v4(), type: 'hourly_graph'),
-        model.DashboardWidgetModel(id: const Uuid().v4(), type: 'payment_pie_chart'),
-        model.DashboardWidgetModel(id: const Uuid().v4(), type: 'today_revenue'),
+        model.DashboardWidgetModel(
+            id: const Uuid().v4(), type: 'payment_pie_chart'),
+        model.DashboardWidgetModel(
+            id: const Uuid().v4(), type: 'today_revenue'),
       ];
       await StorageService.saveDashboardWidgetsOrder(loadedWidgets);
     }
@@ -77,7 +83,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _addNewWidget(String type) {
     setState(() {
-      widgetsList.add(model.DashboardWidgetModel(id: const Uuid().v4(), type: type));
+      widgetsList
+          .add(model.DashboardWidgetModel(id: const Uuid().v4(), type: type));
     });
     _saveWidgets();
   }
@@ -206,7 +213,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildDashboardContent(BuildContext context, AppLocalizations localizations) {
+  Widget _buildDashboardContent(
+      BuildContext context, AppLocalizations localizations) {
     return ReorderableListView(
       padding: const EdgeInsets.all(16.0),
       proxyDecorator: (child, index, animation) {
@@ -233,8 +241,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onLongPress: isEditMode
                 ? null
                 : () {
-              // Do something on long press in normal mode (optional)
-            },
+                    // Do something on long press in normal mode (optional)
+                  },
             child: Stack(
               children: [
                 Container(
@@ -248,20 +256,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     boxShadow: isEditMode
                         ? [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: const Offset(4, 8),
-                        spreadRadius: 10,
-                      ),
-                    ]
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10,
+                              offset: const Offset(4, 8),
+                              spreadRadius: 10,
+                            ),
+                          ]
                         : [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.5),
-                        blurRadius: 5,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -283,7 +291,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       alignment: Alignment.center,
                       child: FittedBox(
                         child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.red, size: 34),
+                          icon: const Icon(Icons.close,
+                              color: Colors.red, size: 34),
                           onPressed: () => _removeWidget(widgetModel.id),
                         ),
                       ),
@@ -297,13 +306,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildWidgetContent(String type) {
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final receiptProvider =
+        Provider.of<ReceiptProvider>(context, listen: false);
+    final productProvider =
+        Provider.of<ProductProvider>(context, listen: false);
     final localizations = AppLocalizations.of(context)!;
 
     switch (type) {
       case 'summary':
-      // Zobrazení počtu účtenek
         return widgets.buildSummaryBlock(
           context,
           '${receiptProvider.receipts.length}',
@@ -311,12 +321,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
 
       case 'top_products':
-      // Zavolání nově definované metody v ReceiptProvider
         final topProducts = receiptProvider.getTopProducts(limit: 5);
         return widgets.buildTopProductsTable(context, topProducts);
 
       case 'top_categories':
-      // Zavolání nově definované metody v ReceiptProvider
         final topCategories = receiptProvider.getTopCategories(
           limit: 5,
           productProvider: productProvider,
@@ -327,14 +335,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return widgets.buildHourlyRevenueChart(context, receiptProvider);
 
       case 'payment_pie_chart':
-        return widgets.buildDynamicPieChart(context, receiptProvider, localizations);
+        return widgets.buildDynamicPieChart(
+            context, receiptProvider, localizations);
 
       case 'today_revenue':
         final double todayRevenue = receiptProvider.receipts.fold(
           0.0,
-              (sum, receipt) => sum + (receipt['total'] as num).toDouble(),
+          (sum, receipt) => sum + (receipt['total'] as num).toDouble(),
         );
-        return widgets.buildTodayRevenueBlock(context, todayRevenue, isEditMode: isEditMode);
+        return widgets.buildTodayRevenueBlock(context, todayRevenue,
+            isEditMode: isEditMode);
 
       default:
         return Text(localizations.translate('unknownWidgetType'));

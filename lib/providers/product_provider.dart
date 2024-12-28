@@ -1,7 +1,7 @@
 // lib/providers/product_provider.dart
 
 import 'package:flutter/material.dart';
-import '../models/product.dart';
+import '../models/product_model.dart';
 import '../services/api_service.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -19,7 +19,7 @@ class ProductProvider extends ChangeNotifier {
     try {
       categories = await ApiService.fetchCategories();
     } catch (e) {
-      print('Chyba při načítání kategorií: $e');
+      print('Error while loading (category): $e');
     } finally {
       isLoading = false;
       notifyListeners();
@@ -34,7 +34,7 @@ class ProductProvider extends ChangeNotifier {
     try {
       products = await ApiService.fetchProducts();
     } catch (e) {
-      print('Chyba při načítání produktů: $e');
+      print('Error while loading (product): $e');
     } finally {
       isLoading = false;
       notifyListeners();
@@ -48,7 +48,7 @@ class ProductProvider extends ChangeNotifier {
       await fetchProducts();
       notifyListeners();
     } catch (e) {
-      print('Chyba při přidávání produktu: $e');
+      print('Error while adding: $e');
     }
   }
 
@@ -59,7 +59,7 @@ class ProductProvider extends ChangeNotifier {
       await fetchProducts();
       notifyListeners();
     } catch (e) {
-      print('Chyba při úpravě produktu: $e');
+      print('Error while editing: $e');
     }
   }
 
@@ -70,7 +70,7 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
       await fetchProducts();
     } catch (e) {
-      print('Chyba při mazání produktu: $e');
+      print('Error while deleting: $e');
     }
   }
 
@@ -85,10 +85,11 @@ class ProductProvider extends ChangeNotifier {
   Product? getProductByName(String productName) {
     try {
       return products.firstWhere(
-            (product) => product.itemName.toLowerCase() == productName.toLowerCase(),
+        (product) =>
+            product.itemName.toLowerCase() == productName.toLowerCase(),
       );
     } catch (e) {
-      print('Produkt s názvem "$productName" nebyl nalezen.');
+      print('Product "$productName" not found.');
       return null;
     }
   }

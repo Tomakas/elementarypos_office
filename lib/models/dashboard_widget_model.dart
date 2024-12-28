@@ -2,14 +2,15 @@
 
 class DashboardWidgetModel {
   final String id;
-  final String type; // Např. "summary", "top_products", "hourly_graph", "payment_pie_chart"
+  final String
+      type; // Např. "summary", "top_products", "hourly_graph", "payment_pie_chart"
 
   DashboardWidgetModel({required this.id, required this.type});
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-  };
+        'id': id,
+        'type': type,
+      };
 
   factory DashboardWidgetModel.fromJson(Map<String, dynamic> json) {
     return DashboardWidgetModel(

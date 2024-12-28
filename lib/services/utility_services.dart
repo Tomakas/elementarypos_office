@@ -114,28 +114,6 @@ class Utility {
   }
 }
 
-//--------------------------------------------------
-//////////// nadbytečné ke smazání
-//--------------------------------------------------
-
-class XXXItemSummary {
-  String name;
-  int quantity;
-  double totalPrice;
-
-  XXXItemSummary({required this.name, this.quantity = 0, this.totalPrice = 0.0});
-
-  void add(int quantity, double price) {
-    this.quantity += quantity;
-    totalPrice += price;
-  }
-}
-
-//--------------------------------------------------
-//////////// nadbytečné ke smazání
-//--------------------------------------------------
-
-
 class LocalizationService {
   /// Načte aktuální jazyk z `SharedPreferences` nebo vrátí systémový výchozí jazyk.
   static Future<Locale> getLocale() async {

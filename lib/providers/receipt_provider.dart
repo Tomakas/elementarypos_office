@@ -77,7 +77,7 @@ class ReceiptProvider extends ChangeNotifier {
   /// Aktualizace rozsahu dat
   void updateDateRange(DateTimeRange? newDateRange) {
     dateRange = newDateRange;
-    fetchReceipts();
+   // fetchReceipts();  !!!!!!!! test odstranění notifyListeners
   }
 
   /// Aktualizace filtračních parametrů

@@ -85,11 +85,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: localizations.translate('searchForCustomer'), // Placeholder text
+                hintStyle: TextStyle(
+                  color: Colors.grey, // Nastavení barvy placeholder textu na šedou
+                ),
                 border: const OutlineInputBorder(),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16.0),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+              ),
+              style: TextStyle(
+                color: Colors.black, // Nastavení barvy vstupního textu na černou
               ),
               onChanged: (value) {
                 setState(() {

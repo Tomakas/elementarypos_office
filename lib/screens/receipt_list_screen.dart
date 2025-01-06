@@ -21,6 +21,10 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
     final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
     receiptProvider.updateDateRange(DateTimeRange(start: todayStart, end: todayEnd));
+
+    // A buď fetch pak zavoláte ručně:
+    receiptProvider.fetchReceipts();
+
   }
 
   static String _formatPaymentLine(AppLocalizations localizations, String paymentType, double total) {

@@ -77,7 +77,6 @@ class ReceiptProvider extends ChangeNotifier {
   /// Aktualizace rozsahu dat
   void updateDateRange(DateTimeRange? newDateRange) {
     dateRange = newDateRange;
-   // fetchReceipts();  !!!!!!!! test odstranění notifyListeners
   }
 
   /// Aktualizace filtračních parametrů
@@ -96,8 +95,7 @@ class ReceiptProvider extends ChangeNotifier {
     fetchReceipts();
   }
 
-  /// Vrací seznam nejprodávanějších produktů podle tržby (revenue).
-  /// Struktura: [{ 'name': ..., 'quantity': ..., 'revenue': ... }, ...]
+  /// Vrací seznam nejprodávanějších produktů podle tržby.
   List<Map<String, dynamic>> getTopProducts({int limit = 5}) {
     final Map<String, Map<String, dynamic>> productData = {};
 

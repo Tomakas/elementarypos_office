@@ -21,12 +21,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
   @override
   void initState() {
     super.initState();
-    final customerProvider =
-    Provider.of<CustomerProvider>(context, listen: false);
-    customerProvider.fetchCustomers().then((_){
-      _applySearch('', customerProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final customerProvider =
+      Provider.of<CustomerProvider>(context, listen: false);
+
+      customerProvider.fetchCustomers().then((_) {
+        _applySearch('', customerProvider);
+      });
     });
   }
+
 
   void _applySearch(String query, CustomerProvider customerProvider) {
     if (query.isEmpty) {

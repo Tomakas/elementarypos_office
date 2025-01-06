@@ -34,12 +34,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.initState();
     _loadPreferences();
     productProvider = Provider.of<ProductProvider>(context, listen: false);
-    productProvider.fetchCategories();
-    productProvider.fetchProducts().then((_) {
-      _applyAllFiltersAndSorting(productProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      productProvider.fetchCategories();
+      productProvider.fetchProducts().then((_) {
+        _applyAllFiltersAndSorting(productProvider);
+      });
+      _loadStockData();
     });
+
     productProvider.addListener(_onProductProviderChange);
-    _loadStockData();
   }
 
   void _onProductProviderChange() {

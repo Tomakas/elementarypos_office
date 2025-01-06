@@ -23,7 +23,6 @@ class StorageService {
   static Future<String?> getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     final apiKey = prefs.getString(_apiKeyKey);
-    print('Not valid API key: $apiKey');
     return apiKey;
   }
 

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'dashboard_screen.dart';
 import 'settings_screen.dart';
 import 'customers_screen.dart';
-import '../providers/receipt_provider.dart';
-import '../providers/product_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/product_list_screen.dart';
 import '../screens/receipt_list_screen.dart';
@@ -47,13 +44,6 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
-
-    // Refresh data when switching to specific tabs
-    if (index == 1) {
-      context.read<ReceiptProvider>().fetchReceipts();
-    } else if (index == 2) {
-      context.read<ProductProvider>().fetchProducts();
-    }
   }
 
   @override

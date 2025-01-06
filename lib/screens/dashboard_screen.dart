@@ -26,7 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Místo, kde si stáhnete seznam widgetů (z SharedPreferences, serveru atd.)
     // Pro ukázku zkusíme načíst z StorageService:
     List<DashboardWidgetModel> loaded =
-    await StorageService.getDashboardWidgetsOrder();
+        await StorageService.getDashboardWidgetsOrder();
 
     if (loaded.isEmpty) {
       loaded = [
@@ -71,11 +71,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           content: DropdownButtonFormField<String>(
             items: const [
               DropdownMenuItem(value: 'summary', child: Text('Summary')),
-              DropdownMenuItem(value: 'top_products', child: Text('Top Products')),
-              DropdownMenuItem(value: 'top_categories', child: Text('Top Categories')),
-              DropdownMenuItem(value: 'hourly_graph', child: Text('Hourly Graph')),
-              DropdownMenuItem(value: 'payment_pie_chart', child: Text('Payment Pie Chart')),
-              DropdownMenuItem(value: 'today_revenue', child: Text('Today Revenue')),
+              DropdownMenuItem(
+                  value: 'top_products', child: Text('Top Products')),
+              DropdownMenuItem(
+                  value: 'top_categories', child: Text('Top Categories')),
+              DropdownMenuItem(
+                  value: 'hourly_graph', child: Text('Hourly Graph')),
+              DropdownMenuItem(
+                  value: 'payment_pie_chart', child: Text('Payment Pie Chart')),
+              DropdownMenuItem(
+                  value: 'today_revenue', child: Text('Today Revenue')),
             ],
             onChanged: (val) => selectedType = val,
           ),
@@ -112,11 +117,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.translate('dashboardTitle')),
+        title: Text(localizations.translate('dashboardTitle'),
+            style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.grey[850],
         actions: [
           if (!isEditMode)
             IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(Icons.edit, color: Colors.white,),
               onPressed: _enterEditMode,
             )
           else ...[
@@ -163,19 +170,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildWidgetByType(model.type),
                   if (isEditMode)
                     Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey[800],
-                          border: Border.all(color: Colors.white70, width: 2),
-                        ),
-                        width: 36,
-                        height: 36,
-                        alignment: Alignment.center,
+                      top: -10,
+                      right: 0,
                         child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.red),
+                          icon: const Icon(Icons.close_outlined, color: Colors.red, size: 40, ),
                           onPressed: () {
                             setState(() {
                               widgetsList.removeWhere((w) => w.id == model.id);
@@ -184,7 +182,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           },
                         ),
                       ),
-                    )
                 ],
               ),
             ),

@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 class ProductProvider extends ChangeNotifier {
   List<Product> products = [];
   List<Map<String, dynamic>> categories = [];
+  Map<String, double> stockData = {};
   bool isLoading = false;
 
   ProductProvider();
@@ -93,4 +94,53 @@ class ProductProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  /// Metoda pro kompletní načtení produktových dat:
+  /// - Kategorií
+  /// - Produktů
+  /// - Stavů skladů
+  Future<void> fetchAllProductData() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1) Načíst kategorie
+      categories = await ApiService.fetchCategories();
+
+      // 2) Načíst produkty
+      products = await ApiService.fetchProducts();
+
+      // 3) Načíst stavy skladu
+      final stockList = await ApiService.fetchActualStockData();
+      stockData = {
+        for (var item in stockList)
+          if (item['sku'] != null) item['sku']: item['quantity'] as double,
+      };
+    } catch (e) {
+      print('Error while loading data: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Pokud chcete i samostatné volání (např. pro refresh stocku), můžete přidat:
+  Future<void> fetchStockData() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final stockList = await ApiService.fetchActualStockData();
+      stockData = {
+        for (var item in stockList)
+          if (item['sku'] != null) item['sku']: item['quantity'] as double,
+      };
+    } catch (e) {
+      print('Error while loading stock data: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
 }

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 import '../models/product_model.dart';
 import '../widgets/product_widget.dart';
-import '../services/api_service.dart';
 import '../screens/edit_product_screen.dart';
 import '../services/utility_services.dart';
 import '../l10n/app_localizations.dart';
@@ -19,8 +18,7 @@ class ProductListScreen extends StatefulWidget {
 String? expandedProductId;
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  // Ukládáme stavy filtru + data
-  Map<String, double> stockData = {};
+  late ProductProvider productProvider;
   bool isSearchActive = false;
   String searchText = "";
   String? currentCategoryId = '';
@@ -32,30 +30,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
   String currentSortCriteria = "name";
   bool currentSortAscending = true;
 
-  late ProductProvider productProvider;
-
   @override
   void initState() {
     super.initState();
-
-    // 1) Načteme uložené preference (filtry, řazení)
-    _loadPreferences();
-
-    // 2) K ProductProvideru se dostaneme hned v initState
     productProvider = Provider.of<ProductProvider>(context, listen: false);
-
-    // 3) Zavoláme asynchronně fetchCategories + fetchProducts + stock, až po vykreslení:
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await productProvider.fetchCategories();
-      await productProvider.fetchProducts();
-      await _loadStockData();
-
-      // 4) Až tady, kdy products máme, aplikujeme filtry a řazení
+      await productProvider.fetchAllProductData();
+      // Až tady zavoláme filtrační metodu:
       _applyAllFiltersAndSorting(productProvider);
     });
-
-    // 5) Listenery
-    productProvider.addListener(_onProductProviderChange);
   }
 
   @override
@@ -100,20 +83,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     });
   }
 
-  // -- Načtení skladových dat (API) --
-  Future<void> _loadStockData() async {
-    try {
-      final stockList = await ApiService.fetchActualStockData();
-      setState(() {
-        stockData = {
-          for (var item in stockList)
-            if (item['sku'] != null) item['sku']: item['quantity'] as double,
-        };
-      });
-    } catch (e) {
-      print('Error loading stock data: $e');
-    }
-  }
 
   // -- Vlastní logika filtrace a řazení --
   void _applyAllFiltersAndSorting(ProductProvider provider) {
@@ -128,7 +97,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
       final matchesOnSale = !showOnlyOnSale || product.onSale;
 
-      final quantityInStock = product.sku != null ? (stockData[product.sku] ?? 0) : 0;
+      final quantityInStock = product.sku != null ? (productProvider.stockData[product.sku] ?? 0) : 0;
       final matchesInStock = !showOnlyInStock || (quantityInStock > 0);
 
       // fulltext search
@@ -160,8 +129,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
           valueB = Utility.normalizeString(b.categoryName.toLowerCase());
           break;
         case 'quantity':
-          final qtyA = stockData[a.sku] ?? 0.0;
-          final qtyB = stockData[b.sku] ?? 0.0;
+          final qtyA = productProvider.stockData[a.sku] ?? 0.0;
+          final qtyB = productProvider.stockData[b.sku] ?? 0.0;
           valueA = qtyA;
           valueB = qtyB;
           break;
@@ -441,7 +410,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     return ProductWidget(
                       product: product,
                       categories: provider.categories,
-                      stockQuantity: stockData[product.sku],
+                      stockQuantity: productProvider.stockData[product.sku],
                       isExpanded: expandedProductId == product.itemId,
                       onExpand: () {
                         setState(() {

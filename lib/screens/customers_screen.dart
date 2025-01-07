@@ -18,6 +18,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
   String searchText = "";
   List<Customer> filteredCustomers = [];
 
+
   @override
   void initState() {
     super.initState();

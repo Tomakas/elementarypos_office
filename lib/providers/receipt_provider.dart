@@ -160,4 +160,25 @@ class ReceiptProvider extends ChangeNotifier {
       ..sort((a, b) => b['revenue'].compareTo(a['revenue']));
     return sortedCategories.take(limit).toList();
   }
+
+  // Řazení účtenek
+  void sortReceipts(String criteria, bool ascending) {
+    receipts.sort((a, b) {
+        dynamic valueA;
+        dynamic valueB;
+        if (criteria == 'price') {
+          valueA = a['total'];
+          valueB = b['total'];
+        } else if (criteria == 'time') {
+          valueA = DateTime.parse(a['dateTime']);
+          valueB = DateTime.parse(b['dateTime']);
+        }
+        if (ascending) {
+          return Comparable.compare(valueA, valueB);
+        } else {
+          return Comparable.compare(valueB, valueA);
+        }
+      });
+    notifyListeners(); // notifyListeners() se zavolá zde
+  }
 }

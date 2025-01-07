@@ -88,7 +88,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextField(
               controller: _apiKeyController,
               decoration: InputDecoration(
-                labelText: localizations.translate('apiKeyLabel'),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -97,16 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: _saveApiKey,
               child: Text(localizations.translate('saveApiKey')),
             ),
-            if (_savedApiKey != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Text(
-                  localizations
-                      .translate('currentApiKey')
-                      .replaceFirst('{apiKey}', _savedApiKey!),
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ),
             const Divider(height: 32.0, thickness: 1.0),
             Text(
               localizations.translate('changeLanguage'),

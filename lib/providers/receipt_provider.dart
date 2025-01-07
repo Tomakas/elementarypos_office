@@ -7,15 +7,9 @@ class ReceiptProvider extends ChangeNotifier {
   List receipts = [];
   bool isLoading = false;
 
+
   // Rozsah dat pro filtrování
   DateTimeRange? dateRange;
-
-  // Filtrační parametry pro typ platby a slevy
-  bool showCash = true;
-  bool showCard = true;
-  bool showBank = true;
-  bool showOther = true;
-  bool showWithDiscount = false;
 
   ReceiptProvider();
 
@@ -30,23 +24,30 @@ class ReceiptProvider extends ChangeNotifier {
     return receipts.isNotEmpty ? totalRevenue / receipts.length : 0.0;
   }
 
-  /// Načtení účtenek
-  Future<void> fetchReceipts() async {
+  // Upravená metoda fetchReceipts - přijímá filtrační parametry
+  Future<void> fetchReceipts({
+    DateTimeRange? dateRange,
+    bool showCash = true,
+    bool showCard = true,
+    bool showBank = true,
+    bool showOther = true,
+    bool showWithDiscount = false,
+  }) async {
     isLoading = true;
     notifyListeners();
     try {
       // Získání rozsahu dat
       String dateFrom = dateRange != null
-          ? DateFormat('yyyy-MM-dd').format(dateRange!.start)
+          ? DateFormat('yyyy-MM-dd').format(dateRange.start)
           : DateFormat('yyyy-MM-dd').format(DateTime.now());
       String dateTo = dateRange != null
-          ? DateFormat('yyyy-MM-dd').format(dateRange!.end)
+          ? DateFormat('yyyy-MM-dd').format(dateRange.end)
           : DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       print('Loading Receipts, date from: $dateFrom, to: $dateTo');
       List allReceipts = await ApiService.fetchReceipts(dateFrom, dateTo, 500);
 
-      // Filtrace účtenek podle filtračních parametrů
+      // Filtrace účtenek - přesunuto z ReceiptListScreen
       receipts = allReceipts.where((receipt) {
         String paymentType = receipt['paymentType'];
         bool matchesPayment = (paymentType == 'CASH' && showCash) ||
@@ -61,7 +62,6 @@ class ReceiptProvider extends ChangeNotifier {
             return price is num && price < 0;
           });
         }
-        // Pokud showWithDiscount == true, vyžadujeme, aby tam byla sleva
         return matchesPayment && (!showWithDiscount || hasDiscount);
       }).toList();
 
@@ -79,7 +79,7 @@ class ReceiptProvider extends ChangeNotifier {
     dateRange = newDateRange;
   }
 
-  /// Aktualizace filtračních parametrů
+  /// Aktualizace filtračních parametrů - parametry se ignorují
   void updateFilters({
     bool? showCash,
     bool? showCard,
@@ -87,12 +87,8 @@ class ReceiptProvider extends ChangeNotifier {
     bool? showOther,
     bool? showWithDiscount,
   }) {
-    if (showCash != null) this.showCash = showCash;
-    if (showCard != null) this.showCard = showCard;
-    if (showBank != null) this.showBank = showBank;
-    if (showOther != null) this.showOther = showOther;
-    if (showWithDiscount != null) this.showWithDiscount = showWithDiscount;
-    fetchReceipts();
+    // Parametry se ignorují, protože filtr se aplikuje v ReceiptListScreen
+    // fetchReceipts(); // Nepotřebujeme volat fetchReceipts zde
   }
 
   /// Vrací seznam nejprodávanějších produktů podle tržby.
@@ -164,21 +160,21 @@ class ReceiptProvider extends ChangeNotifier {
   // Řazení účtenek
   void sortReceipts(String criteria, bool ascending) {
     receipts.sort((a, b) {
-        dynamic valueA;
-        dynamic valueB;
-        if (criteria == 'price') {
-          valueA = a['total'];
-          valueB = b['total'];
-        } else if (criteria == 'time') {
-          valueA = DateTime.parse(a['dateTime']);
-          valueB = DateTime.parse(b['dateTime']);
-        }
-        if (ascending) {
-          return Comparable.compare(valueA, valueB);
-        } else {
-          return Comparable.compare(valueB, valueA);
-        }
-      });
-    notifyListeners(); // notifyListeners() se zavolá zde
+      dynamic valueA;
+      dynamic valueB;
+      if (criteria == 'price') {
+        valueA = a['total'];
+        valueB = b['total'];
+      } else if (criteria == 'time') {
+        valueA = DateTime.parse(a['dateTime']);
+        valueB = DateTime.parse(b['dateTime']);
+      }
+      if (ascending) {
+        return Comparable.compare(valueA, valueB);
+      } else {
+        return Comparable.compare(valueB, valueA);
+      }
+    });
+    notifyListeners();
   }
 }

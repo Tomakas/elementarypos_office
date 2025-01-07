@@ -13,7 +13,16 @@ class ReceiptListScreen extends StatefulWidget {
 }
 
 class _ReceiptListScreenState extends State<ReceiptListScreen> {
-  String? dateRangeText; // Přidáme proměnnou pro uchování textu data
+  String? dateRangeText;
+
+  // Filtrační parametry - v lokálním stavu
+  bool showCash = true;
+  bool showCard = true;
+  bool showBank = true;
+  bool showOther = true;
+  bool showWithDiscount = false;
+
+  List<dynamic> _receipts = []; // Lokální seznam účtenek
 
   @override
   void initState() {
@@ -27,8 +36,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
       receiptProvider.updateDateRange(DateTimeRange(start: todayStart, end: todayEnd));
 
-      receiptProvider.fetchReceipts().then((_) {
-        _updateDateRangeText(receiptProvider); // Aktualizujeme text po načtení dat
+      _fetchReceipts().then((_) {
+        _updateDateRangeText(receiptProvider);
       });
     });
   }
@@ -48,7 +57,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     } else {
       dateRangeText = localizations.translate('noDateFilter');
     }
-    setState(() {}); // Spustíme rebuild widgetu
+    setState(() {});
   }
 
   static String _formatPaymentLine(
@@ -72,9 +81,189 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     return '$paymentText: ${Utility.formatCurrency(total)}';
   }
 
+
+  // Upravená metoda _fetchReceipts - volá metodu z provideru
+  Future<void> _fetchReceipts() async {
+    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
+    setState(() => receiptProvider.isLoading = true);
+
+    try {
+      // Předání filtračních parametrů do provideru
+      await receiptProvider.fetchReceipts(
+        dateRange: receiptProvider.dateRange,
+        showCash: showCash,
+        showCard: showCard,
+        showBank: showBank,
+        showOther: showOther,
+        showWithDiscount: showWithDiscount,
+      );
+
+      // Získání filtrovaných dat z provideru
+      _receipts = receiptProvider.receipts;
+
+      print('Filtered Receipts: ${_receipts.length}');
+    } catch (e) {
+      print('Error while getting Receipts: $e');
+    } finally {
+      setState(() => receiptProvider.isLoading = false);
+    }
+  }
+
+  // Upravená metoda _showDateRangePickerfilter - volá _fetchReceipts
+  void _showDateRangePickerfilter(BuildContext context) async {
+    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
+    DateTimeRange? selectedDateRange;
+    selectedDateRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      initialDateRange: receiptProvider.dateRange,
+    );
+    if (selectedDateRange != null) {
+      receiptProvider.updateDateRange(selectedDateRange);
+      await _fetchReceipts(); // Aktualizace seznamu účtenek
+      _updateDateRangeText(receiptProvider);
+    }
+  }
+
+  // Upravená metoda _showSortDialog - pracuje s lokálním seznamem
+  void _showSortDialog(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(localizations.translate('sortReceipts')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: Text(localizations.translate('priceAscending')),
+                  onTap: () {
+                    setState(() {
+                      _receipts.sort((a, b) => (a['total'] as num).compareTo((b['total'] as num)));
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ListTile(
+                  title: Text(localizations.translate('priceDescending')),
+                  onTap: () {
+                    setState(() {
+                      _receipts.sort((a, b) => (b['total'] as num).compareTo((a['total'] as num)));
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ListTile(
+                  title: Text(localizations.translate('timeAscending')),
+                  onTap: () {
+                    setState(() {
+                      _receipts.sort((a, b) => DateTime.parse(a['dateTime']).compareTo(DateTime.parse(b['dateTime'])));
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ListTile(
+                  title: Text(localizations.translate('timeDescending')),
+                  onTap: () {
+                    setState(() {
+                      _receipts.sort((a, b) => DateTime.parse(b['dateTime']).compareTo(DateTime.parse(a['dateTime'])));
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Upravená metoda _showFilterDialog - pracuje s lokálním stavem
+  void _showFilterDialog(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(localizations.translate('receiptFiltersTitle')),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SwitchListTile(
+                    title: Text(localizations.translate('cashFilter')),
+                    value: showCash,
+                    onChanged: (value) {
+                      setState(() => showCash = value);
+                      _fetchReceipts();
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text(localizations.translate('cardFilter')),
+                    value: showCard,
+                    onChanged: (value) {
+                      setState(() => showCard = value);
+                      _fetchReceipts();
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text(localizations.translate('bankFilter')),
+                    value: showBank,
+                    onChanged: (value) {
+                      setState(() => showBank = value);
+                      _fetchReceipts();
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text(localizations.translate('otherFilter')),
+                    value: showOther,
+                    onChanged: (value) {
+                      setState(() => showOther = value);
+                      _fetchReceipts();
+                    },
+                  ),
+                  SwitchListTile(
+                    title: Text(localizations.translate('discountFilter')),
+                    value: showWithDiscount,
+                    onChanged: (value) {
+                      setState(() => showWithDiscount = value);
+                      _fetchReceipts();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(localizations.translate('cancel')),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(localizations.translate('applyFilters')),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = Provider.of<ReceiptProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -129,8 +318,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                int totalReceipts = provider.receipts.length;
-                double totalValue = provider.receipts.fold<double>(
+                int totalReceipts = _receipts.length; // Použití lokálního seznamu
+                double totalValue = _receipts.fold<double>(
                   0.0,
                       (sum, receipt) => sum + (receipt['total'] ?? 0.0),
                 );
@@ -172,9 +361,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     // ListView
                     Expanded(
                       child: ListView.builder(
-                        itemCount: provider.receipts.length,
+                        itemCount: _receipts.length, // Použití lokálního seznamu
                         itemBuilder: (context, index) {
-                          var receipt = provider.receipts[index];
+                          var receipt = _receipts[index];
                           DateTime dateTime = DateTime.parse(receipt['dateTime']);
                           String formattedDateTime =
                               '${localizations.translate('date')}: ${DateFormat('dd.MM.yyyy').format(dateTime)} '
@@ -230,142 +419,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  // Upravená metoda pro výběr data - voláme _updateDateRangeText
-  void _showDateRangePickerfilter(BuildContext context) async {
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-    DateTimeRange? selectedDateRange;
-    selectedDateRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-      initialDateRange: receiptProvider.dateRange,
-    );
-    if (selectedDateRange != null) {
-      receiptProvider.updateDateRange(selectedDateRange);
-      await receiptProvider.fetchReceipts();
-      _updateDateRangeText(receiptProvider); // Aktualizujeme text po vybrání data
-    }
-  }
-
-  //Zbylé metody (_showSortDialog, _showFilterDialog)
-  void _showSortDialog(BuildContext context) {
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-    final localizations = AppLocalizations.of(context)!;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(localizations.translate('sortReceipts')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  title: Text(localizations.translate('priceAscending')),
-                  onTap: () {
-                    receiptProvider.sortReceipts('price', true);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                ListTile(
-                  title: Text(localizations.translate('priceDescending')),
-                  onTap: () {
-                    receiptProvider.sortReceipts('price', false);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                ListTile(
-                  title: Text(localizations.translate('timeAscending')),
-                  onTap: () {
-                    receiptProvider.sortReceipts('time', true);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                ListTile(
-                  title: Text(localizations.translate('timeDescending')),
-                  onTap: () {
-                    receiptProvider.sortReceipts('time', false);
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showFilterDialog(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(localizations.translate('receiptFiltersTitle')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SwitchListTile(
-                  title: Text(localizations.translate('cashPaymentType')),
-                  value: context.watch<ReceiptProvider>().showCash,
-                  onChanged: (value) {
-                    context.read<ReceiptProvider>().updateFilters(showCash: value);
-                  },
-                ),
-                SwitchListTile(
-                  title: Text(localizations.translate('cardPaymentType')),
-                  value: context.watch<ReceiptProvider>().showCard,
-                  onChanged: (value) {
-                    context.read<ReceiptProvider>().updateFilters(showCard: value);
-                  },
-                ),
-                SwitchListTile(
-                  title: Text(localizations.translate('bankPaymentType')),
-                  value: context.watch<ReceiptProvider>().showBank,
-                  onChanged: (value) {
-                    context.read<ReceiptProvider>().updateFilters(showBank: value);
-                  },
-                ),
-                SwitchListTile(
-                  title: Text(localizations.translate('otherPaymentType')),
-                  value: context.watch<ReceiptProvider>().showOther,
-                  onChanged: (value) {
-                    context.read<ReceiptProvider>().updateFilters(showOther: value);
-                  },
-                ),
-                SwitchListTile(
-                  title: Text(localizations.translate('onlyDiscounts')),
-                  value: context.watch<ReceiptProvider>().showWithDiscount,
-                  onChanged: (value) {
-                    context.read<ReceiptProvider>().updateFilters(showWithDiscount: value);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(localizations.translate('cancel')),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(localizations.translate('applyFilters')),
-            ),
-          ],
-        );
-      },
     );
   }
 }

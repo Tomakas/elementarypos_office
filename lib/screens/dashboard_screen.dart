@@ -1,5 +1,6 @@
 // lib/screens/dashboard_screen.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/dashboard_widget_model.dart';
@@ -142,10 +143,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             IconButton(
               icon: const Icon(Icons.check),
               tooltip: localizations.translate('finishEditing'),
+              color: Colors.white,
               onPressed: _exitEditMode,
             ),
             IconButton(
               icon: const Icon(Icons.add),
+              color: Colors.white,
               tooltip: localizations.translate('addWidget'),
               onPressed: () => _showAddWidgetDialog(context),
             ),

@@ -84,10 +84,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               localizations.translate('apiKeyLabel'),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16.0),
             TextField(
               controller: _apiKeyController,
               decoration: InputDecoration(
+                filled: true, // Přidáme výplň
+                fillColor: Colors.white, // Nastavíme bílou barvu pozadí
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -105,7 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             DropdownButtonFormField<String>(
               value: _currentLanguageCode,
               decoration: InputDecoration(
-                labelText: localizations.translate('selectLanguage'),
+                filled: true,
+                fillColor: Colors.white,
                 border: const OutlineInputBorder(),
               ),
               items: _languageOptions.entries

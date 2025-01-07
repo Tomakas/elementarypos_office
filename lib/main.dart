@@ -64,7 +64,12 @@ class _MyAppState extends State<MyApp> {
         supportedLocales: const [
           Locale('cs', 'CZ'),
           Locale('en', 'US'),
+          Locale('es', 'ES'),
+
         ],
+        theme: ThemeData(
+        scaffoldBackgroundColor: Colors.grey[400],
+        ),
         home: MainScreen(
           updateApiKey: (String apiKey) async {},
           onLanguageChange: _updateLocale,

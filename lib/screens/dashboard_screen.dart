@@ -159,75 +159,88 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           // Přidáme proxyDecorator pro přizpůsobení vzhledu přetahovaného widgetu
           proxyDecorator: (Widget child, int index, Animation<double> animation) {
+            final model = widgetsList[index];
             return Material(
               elevation: 6.0,
               color: Colors.white, // Stejná barva jako ostatní widgety
               borderRadius: BorderRadius.circular(12.0),
-              child: child,
+              child: _buildItem(model, isDragging: true),
             );
           },
 
           padding: const EdgeInsets.all(16.0),
           children: [
-            for (final model in widgetsList)
-            // Obalení každého Containeru do Padding pro vytvoření mezery
-              Padding(
-                key: ValueKey(model.id), // Klíč přiřazen přímo k Padding
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(
-                      color: isEditMode ? Colors.black : Colors.grey,
-                      width: isEditMode ? 2 : 1,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: _buildWidgetByType(model.type),
-                      ),
-                      // V editačním módu zobrazíme drag handle
-                      if (isEditMode)
-                        Positioned(
-                          top: 16,
-                          left: 16,
-                          child: ReorderableDragStartListener(
-                            index: widgetsList.indexOf(model),
-                            child: const Icon(
-                              Icons.drag_handle,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      // Zobrazení tlačítka pro odstranění widgetu v editačním módu
-                      if (isEditMode)
-                        Positioned(
-                          top: 16,
-                          right: 16,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.close_outlined,
-                              color: Colors.red,
-                            ),
-                            tooltip: localizations.translate('delete'),
-                            onPressed: () {
-                              setState(() {
-                                widgetsList.removeWhere((w) => w.id == model.id);
-                              });
-                              _saveWidgetsOrder();
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+            for (int index = 0; index < widgetsList.length; index++)
+              _buildItem(widgetsList[index]),
           ],
         ),
       ),
+    );
+  }
+
+  /// Metoda pro vytvoření widgetu položky
+  Widget _buildItem(DashboardWidgetModel model, {bool isDragging = false}) {
+    return Column(
+      key: ValueKey(model.id),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.0),
+            border: Border.all(
+              color: isEditMode ? Colors.black : Colors.grey,
+              width: isEditMode ? 2 : 1,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _buildWidgetByType(model.type),
+              ),
+              // V editačním módu zobrazíme drag handle
+              if (isEditMode)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: ReorderableDragStartListener(
+                    index: widgetsList.indexOf(model),
+                    child: const Icon(
+                      Icons.drag_indicator,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              // Zobrazení tlačítka pro odstranění widgetu v editačním módu
+              if (isEditMode)
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.close_outlined,
+                      size: 40,
+
+                      color: Colors.red,
+                    ),
+                    tooltip: AppLocalizations.of(context)!.translate('delete'),
+                    onPressed: () {
+                      setState(() {
+                        widgetsList.removeWhere((w) => w.id == model.id);
+                      });
+                      _saveWidgetsOrder();
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // Přidáme mezeru pouze, pokud se widget nepřetahuje
+        if (!isDragging)
+          const SizedBox(height: 12.0),
+      ],
     );
   }
 

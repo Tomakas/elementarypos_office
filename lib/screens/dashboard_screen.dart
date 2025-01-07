@@ -1,3 +1,5 @@
+// lib/screens/dashboard_screen.dart
+
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/dashboard_widget_model.dart';
@@ -23,11 +25,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadWidgetsList() async {
-    // Místo, kde si stáhnete seznam widgetů (z SharedPreferences, serveru atd.)
-    // Pro ukázku zkusíme načíst z StorageService:
+    // Načtení pořadí widgetů z persistentního úložiště
     List<DashboardWidgetModel> loaded =
-        await StorageService.getDashboardWidgetsOrder();
+    await StorageService.getDashboardWidgetsOrder();
 
+    // Pokud není žádné uložené pořadí, nastavíme výchozí pořadí
     if (loaded.isEmpty) {
       loaded = [
         DashboardWidgetModel(id: const Uuid().v4(), type: 'summary'),
@@ -41,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     setState(() {
       widgetsList = loaded;
+      print('Loaded widgets: $widgetsList');
     });
   }
 
@@ -71,18 +74,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           content: DropdownButtonFormField<String>(
             items: const [
               DropdownMenuItem(value: 'summary', child: Text('Summary')),
-              DropdownMenuItem(
-                  value: 'top_products', child: Text('Top Products')),
-              DropdownMenuItem(
-                  value: 'top_categories', child: Text('Top Categories')),
-              DropdownMenuItem(
-                  value: 'hourly_graph', child: Text('Hourly Graph')),
-              DropdownMenuItem(
-                  value: 'payment_pie_chart', child: Text('Payment Pie Chart')),
-              DropdownMenuItem(
-                  value: 'today_revenue', child: Text('Today Revenue')),
+              DropdownMenuItem(value: 'top_products', child: Text('Top Products')),
+              DropdownMenuItem(value: 'top_categories', child: Text('Top Categories')),
+              DropdownMenuItem(value: 'hourly_graph', child: Text('Hourly Graph')),
+              DropdownMenuItem(value: 'payment_pie_chart', child: Text('Payment Pie Chart')),
+              DropdownMenuItem(value: 'today_revenue', child: Text('Today Revenue')),
             ],
             onChanged: (val) => selectedType = val,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              hintText: localizations.translate('selectWidgetType'),
+            ),
           ),
           actions: [
             TextButton(
@@ -116,14 +118,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Colors.grey[400], // Barva pozadí Scaffoldu
       appBar: AppBar(
         title: Text(localizations.translate('dashboardTitle'),
             style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.grey[850],
-        actions: [
+        actions: <Widget>[
           if (!isEditMode)
             IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white,),
+              icon: const Icon(
+                Icons.edit,
+                color: Colors.white,
+              ),
+              tooltip: localizations.translate('edit'),
               onPressed: _enterEditMode,
             )
           else ...[
@@ -140,57 +147,109 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ]
         ],
       ),
-      body: ReorderableListView(
-        padding: const EdgeInsets.all(16.0),
-        onReorder: (oldIndex, newIndex) {
-          setState(() {
-            if (newIndex > oldIndex) {
-              newIndex -= 1;
-            }
-            final item = widgetsList.removeAt(oldIndex);
-            widgetsList.insert(newIndex, item);
-          });
-          _saveWidgetsOrder();
-        },
-        children: [
-          for (final model in widgetsList)
-            Container(
-              key: ValueKey(model.id),
-              margin: const EdgeInsets.only(bottom: 12.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12.0),
-                border: Border.all(
-                  color: isEditMode ? Colors.black : Colors.grey,
-                  width: isEditMode ? 2 : 1,
+      body: Container(
+        color: Colors.grey[400], // Barva pozadí ReorderableListView
+        child: ReorderableListView(
+          // Vypnout výchozí drag handles, abychom mohli přidat vlastní
+          buildDefaultDragHandles: false,
+
+          // Pokud je editovací mód aktivní, použijeme skutečnou metodu pro přeuspořádání
+          // Jinak použijeme metodu, která nepřesune položky
+          onReorder: isEditMode ? _handleReorder : _noReorderAllowed,
+
+          // Přidáme proxyDecorator pro přizpůsobení vzhledu přetahovaného widgetu
+          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+            return Material(
+              elevation: 6.0,
+              color: Colors.white, // Stejná barva jako ostatní widgety
+              borderRadius: BorderRadius.circular(12.0),
+              child: child,
+            );
+          },
+
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            for (final model in widgetsList)
+            // Obalení každého Containeru do Padding pro vytvoření mezery
+              Padding(
+                key: ValueKey(model.id), // Klíč přiřazen přímo k Padding
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.0),
+                    border: Border.all(
+                      color: isEditMode ? Colors.black : Colors.grey,
+                      width: isEditMode ? 2 : 1,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: _buildWidgetByType(model.type),
+                      ),
+                      // V editačním módu zobrazíme drag handle
+                      if (isEditMode)
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: ReorderableDragStartListener(
+                            index: widgetsList.indexOf(model),
+                            child: const Icon(
+                              Icons.drag_handle,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      // Zobrazení tlačítka pro odstranění widgetu v editačním módu
+                      if (isEditMode)
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.close_outlined,
+                              color: Colors.red,
+                            ),
+                            tooltip: localizations.translate('delete'),
+                            onPressed: () {
+                              setState(() {
+                                widgetsList.removeWhere((w) => w.id == model.id);
+                              });
+                              _saveWidgetsOrder();
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-              child: Stack(
-                children: [
-                  _buildWidgetByType(model.type),
-                  if (isEditMode)
-                    Positioned(
-                      top: -10,
-                      right: 0,
-                        child: IconButton(
-                          icon: const Icon(Icons.close_outlined, color: Colors.red, size: 40, ),
-                          onPressed: () {
-                            setState(() {
-                              widgetsList.removeWhere((w) => w.id == model.id);
-                            });
-                            _saveWidgetsOrder();
-                          },
-                        ),
-                      ),
-                ],
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  /// Namísto `_buildWidgetContent` voláme samostatné widgety definované v `dashboard_widgets.dart`.
+  /// Metoda pro přeuspořádání widgetů
+  void _handleReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final item = widgetsList.removeAt(oldIndex);
+      widgetsList.insert(newIndex, item);
+    });
+    _saveWidgetsOrder();
+  }
+
+  /// Metoda, která neprovádí žádnou změnu pořadí (v ne-edit módu)
+  void _noReorderAllowed(int oldIndex, int newIndex) {
+    // Nic neděláme, takže se pořadí nezmění
+    setState(() {});
+  }
+
+  /// Metoda pro vytvoření widgetu na základě jeho typu
   Widget _buildWidgetByType(String type) {
     switch (type) {
       case 'summary':

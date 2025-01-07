@@ -28,7 +28,6 @@ class _SummaryWidgetState extends State<SummaryWidget> {
     setState(() => isLoading = true);
     final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
 
-    // Pro jistotu načteme i stavy účtenek (pokud se widget otevře poprvé).
     await receiptProvider.fetchReceipts();
 
     setState(() {
@@ -116,7 +115,10 @@ class _TopProductsWidgetState extends State<TopProductsWidget> {
 
     return Container(
       padding: const EdgeInsets.all(6.0),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -235,7 +237,10 @@ class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
 
     return Container(
       padding: const EdgeInsets.all(6.0),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -398,7 +403,10 @@ class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
     return Container(
       height: 300,
       padding: const EdgeInsets.all(6.0),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       child: Column(
         children: [
           Center(
@@ -572,8 +580,12 @@ class _PaymentPieChartWidgetState extends State<PaymentPieChartWidget> {
 
     return Container(
       padding: const EdgeInsets.all(6.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       height: 300,
-      color: Colors.white,
+      // color: Colors.white,
       child: Column(
         children: [
           const SizedBox(height: 30),
@@ -601,9 +613,10 @@ class _PaymentPieChartWidgetState extends State<PaymentPieChartWidget> {
                   ),
                 ),
                 Expanded(
-                  flex: 1,
+                  flex: 2,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: legendItems,
                   ),
                 ),

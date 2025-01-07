@@ -27,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadWidgetsList() async {
     // Načtení pořadí widgetů z persistentního úložiště
     List<DashboardWidgetModel> loaded =
-    await StorageService.getDashboardWidgetsOrder();
+        await StorageService.getDashboardWidgetsOrder();
 
     // Pokud není žádné uložené pořadí, nastavíme výchozí pořadí
     if (loaded.isEmpty) {
@@ -74,11 +74,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           content: DropdownButtonFormField<String>(
             items: const [
               DropdownMenuItem(value: 'summary', child: Text('Summary')),
-              DropdownMenuItem(value: 'top_products', child: Text('Top Products')),
-              DropdownMenuItem(value: 'top_categories', child: Text('Top Categories')),
-              DropdownMenuItem(value: 'hourly_graph', child: Text('Hourly Graph')),
-              DropdownMenuItem(value: 'payment_pie_chart', child: Text('Payment Pie Chart')),
-              DropdownMenuItem(value: 'today_revenue', child: Text('Today Revenue')),
+              DropdownMenuItem(
+                  value: 'top_products', child: Text('Top Products')),
+              DropdownMenuItem(
+                  value: 'top_categories', child: Text('Top Categories')),
+              DropdownMenuItem(
+                  value: 'hourly_graph', child: Text('Hourly Graph')),
+              DropdownMenuItem(
+                  value: 'payment_pie_chart', child: Text('Payment Pie Chart')),
+              DropdownMenuItem(
+                  value: 'today_revenue', child: Text('Today Revenue')),
             ],
             onChanged: (val) => selectedType = val,
             decoration: InputDecoration(
@@ -158,7 +163,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onReorder: isEditMode ? _handleReorder : _noReorderAllowed,
 
           // Přidáme proxyDecorator pro přizpůsobení vzhledu přetahovaného widgetu
-          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+          proxyDecorator:
+              (Widget child, int index, Animation<double> animation) {
             final model = widgetsList[index];
             return Material(
               elevation: 6.0,
@@ -202,8 +208,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // V editačním módu zobrazíme drag handle
               if (isEditMode)
                 Positioned(
-                  top: 16,
-                  left: 16,
+                  top: 8,
+                  left: 8,
                   child: ReorderableDragStartListener(
                     index: widgetsList.indexOf(model),
                     child: const Icon(
@@ -216,13 +222,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // Zobrazení tlačítka pro odstranění widgetu v editačním módu
               if (isEditMode)
                 Positioned(
-                  top: 16,
-                  right: 16,
+                  top: 8,
+                  right: 8,
                   child: IconButton(
                     icon: const Icon(
                       Icons.close_outlined,
                       size: 40,
-
                       color: Colors.red,
                     ),
                     tooltip: AppLocalizations.of(context)!.translate('delete'),
@@ -238,8 +243,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         // Přidáme mezeru pouze, pokud se widget nepřetahuje
-        if (!isDragging)
-          const SizedBox(height: 12.0),
+        if (!isDragging) const SizedBox(height: 12.0),
       ],
     );
   }

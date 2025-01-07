@@ -364,7 +364,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             ? PreferredSize(
           preferredSize: const Size.fromHeight(48.0),
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(0.0),
             child: TextField(
               decoration: InputDecoration(
                 hintText: localizations.translate('searchForProduct'),

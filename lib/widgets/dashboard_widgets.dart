@@ -8,7 +8,7 @@ import '../services/utility_services.dart';
 
 /// 1) Widget: Počet účtenek (Summary)
 class SummaryWidget extends StatefulWidget {
-  const SummaryWidget({Key? key}) : super(key: key);
+  const SummaryWidget({super.key});
 
   @override
   State<SummaryWidget> createState() => _SummaryWidgetState();
@@ -77,7 +77,7 @@ class _SummaryWidgetState extends State<SummaryWidget> {
 
 /// 2) Widget: TopProducts (tabulka nejprodávanějších produktů)
 class TopProductsWidget extends StatefulWidget {
-  const TopProductsWidget({Key? key}) : super(key: key);
+  const TopProductsWidget({super.key});
 
   @override
   State<TopProductsWidget> createState() => _TopProductsWidgetState();
@@ -190,7 +190,7 @@ class _TopProductsWidgetState extends State<TopProductsWidget> {
 
 /// 3) Widget: TopCategories (tabulka nejprodávanějších kategorií)
 class TopCategoriesWidget extends StatefulWidget {
-  const TopCategoriesWidget({Key? key}) : super(key: key);
+  const TopCategoriesWidget({super.key});
 
   @override
   State<TopCategoriesWidget> createState() => _TopCategoriesWidgetState();
@@ -309,7 +309,7 @@ class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
 
 /// 4) Widget: Hodinový graf tržeb (Hourly Graph)
 class HourlyGraphWidget extends StatefulWidget {
-  const HourlyGraphWidget({Key? key}) : super(key: key);
+  const HourlyGraphWidget({super.key});
 
   @override
   State<HourlyGraphWidget> createState() => _HourlyGraphWidgetState();
@@ -461,7 +461,7 @@ class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
 
 /// 5) Widget: Payment Pie Chart (koláčový graf tržeb podle typu platby)
 class PaymentPieChartWidget extends StatefulWidget {
-  const PaymentPieChartWidget({Key? key}) : super(key: key);
+  const PaymentPieChartWidget({super.key});
 
   @override
   State<PaymentPieChartWidget> createState() => _PaymentPieChartWidgetState();
@@ -618,7 +618,7 @@ class _PaymentPieChartWidgetState extends State<PaymentPieChartWidget> {
 
 /// 6) Widget: TodayRevenue (blok s dnešní tržbou)
 class TodayRevenueWidget extends StatefulWidget {
-  const TodayRevenueWidget({Key? key}) : super(key: key);
+  const TodayRevenueWidget({super.key});
 
   @override
   State<TodayRevenueWidget> createState() => _TodayRevenueWidgetState();

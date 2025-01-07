@@ -348,11 +348,11 @@ class ExpandableText extends StatelessWidget {
   final TextStyle defaultTextStyle;
 
   const ExpandableText({
-    Key? key,
+    super.key,
     required this.text,
     this.highlight,
     required this.defaultTextStyle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

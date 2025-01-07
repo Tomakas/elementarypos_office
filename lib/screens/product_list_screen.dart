@@ -15,9 +15,11 @@ class ProductListScreen extends StatefulWidget {
   State<ProductListScreen> createState() => _ProductListScreenState();
 }
 
+// Globální identifikátor pro rozbalení detailu
 String? expandedProductId;
 
 class _ProductListScreenState extends State<ProductListScreen> {
+  // Ukládáme stavy filtru + data
   Map<String, double> stockData = {};
   bool isSearchActive = false;
   String searchText = "";
@@ -25,28 +27,35 @@ class _ProductListScreenState extends State<ProductListScreen> {
   bool showOnlyOnSale = true;
   bool showOnlyInStock = false;
   List<Product> filteredProducts = [];
+
+  // Parametry třídění
   String currentSortCriteria = "name";
   bool currentSortAscending = true;
+
   late ProductProvider productProvider;
 
   @override
   void initState() {
     super.initState();
+
+    // 1) Načteme uložené preference (filtry, řazení)
     _loadPreferences();
+
+    // 2) K ProductProvideru se dostaneme hned v initState
     productProvider = Provider.of<ProductProvider>(context, listen: false);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      productProvider.fetchCategories();
-      productProvider.fetchProducts().then((_) {
-        _applyAllFiltersAndSorting(productProvider);
-      });
-      _loadStockData();
+
+    // 3) Zavoláme asynchronně fetchCategories + fetchProducts + stock, až po vykreslení:
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await productProvider.fetchCategories();
+      await productProvider.fetchProducts();
+      await _loadStockData();
+
+      // 4) Až tady, kdy products máme, aplikujeme filtry a řazení
+      _applyAllFiltersAndSorting(productProvider);
     });
 
+    // 5) Listenery
     productProvider.addListener(_onProductProviderChange);
-  }
-
-  void _onProductProviderChange() {
-    _applyAllFiltersAndSorting(productProvider);
   }
 
   @override
@@ -56,6 +65,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.dispose();
   }
 
+  // -- Uložení/Nahrání filtračních preferencí do SharedPreferences --
   Future<void> _loadPreferences() async {
     final preferences = await PreferencesHelper.loadFilterPreferences();
     setState(() {
@@ -77,6 +87,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  // -- Když productProvider změní data (např. fetchProducts), synchronně se dofiltruje
+  void _onProductProviderChange() {
+    _applyAllFiltersAndSorting(productProvider);
+  }
+
+  // -- Vyhledávání (search field) --
   void _applySearch(String query, ProductProvider productProvider) {
     setState(() {
       searchText = query;
@@ -84,7 +100,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
     });
   }
 
-  void _loadStockData() async {
+  // -- Načtení skladových dat (API) --
+  Future<void> _loadStockData() async {
     try {
       final stockList = await ApiService.fetchActualStockData();
       setState(() {
@@ -98,128 +115,75 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+  // -- Vlastní logika filtrace a řazení --
+  void _applyAllFiltersAndSorting(ProductProvider provider) {
+    // Vezmeme všechny produkty z provideru
+    final originalList = provider.products;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          localizations.translate('productsTitle'),
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.grey[850],
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            tooltip: localizations.translate('searchTooltip'),
-            onPressed: () {
-              setState(() {
-                isSearchActive = !isSearchActive;
-                if (!isSearchActive) {
-                  searchText = "";
-                  _applyAllFiltersAndSorting(productProvider);
-                }
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.sort, color: Colors.white),
-            tooltip: localizations.translate('sortTooltip'),
-            onPressed: () => _showSortDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_alt_sharp, color: Colors.white),
-            tooltip: localizations.translate('filterTooltip'),
-            onPressed: () => _showCategoryFilterDialog(context),
-          ),
-        ],
-        bottom: isSearchActive
-            ? PreferredSize(
-          preferredSize: const Size.fromHeight(48.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: localizations.translate('searchForProduct'), // Placeholder text
-                hintStyle: TextStyle(
-                  color: Colors.grey, // Nastavení barvy placeholder textu na šedou
-                ),
-                border: const OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-              ),
-              style: TextStyle(
-                color: Colors.black, // Nastavení barvy vstupního textu na černou
-              ),
-              onChanged: (value) => _applySearch(value, productProvider),
-            ),
-          ),
+    // 1) Filtrace
+    final filtered = originalList.where((product) {
+      final matchesCategory =
+          (currentCategoryId == null || currentCategoryId!.isEmpty)
+              || product.categoryId == currentCategoryId;
 
-        )
-            : null,
-      ),
-      body: productProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          Expanded(
-            child: filteredProducts.isEmpty
-                ? Center(
-              child: Text(
-                localizations.translate('noProductsAvailable'),
-                style: const TextStyle(fontSize: 16),
-              ),
-            )
-                : ListView.builder(
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
-                return ProductWidget(
-                  product: product,
-                  categories: productProvider.categories,
-                  stockQuantity: stockData[product.sku],
-                  isExpanded: expandedProductId == product.itemId,
-                  onExpand: () {
-                    setState(() {
-                      if (expandedProductId == product.itemId) {
-                        expandedProductId = null;
-                      } else {
-                        expandedProductId = product.itemId;
-                      }
-                    });
-                  },
-                  highlightText: searchText, // Přidáno pro zvýraznění
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await productProvider.fetchCategories();
-          final result = await Navigator.of(context).push<bool?>(
-            MaterialPageRoute(
-              builder: (context) => EditProductScreen(
-                categories: productProvider.categories,
-                product: null,
-              ),
-            ),
-          );
-          if (result == true) {
-            await productProvider.fetchProducts();
-            _applyAllFiltersAndSorting(productProvider);
-          }
-        },
-        backgroundColor: Colors.grey[850],
-        tooltip: localizations.translate('addNewProduct'),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
+      final matchesOnSale = !showOnlyOnSale || product.onSale;
+
+      final quantityInStock = product.sku != null ? (stockData[product.sku] ?? 0) : 0;
+      final matchesInStock = !showOnlyInStock || (quantityInStock > 0);
+
+      // fulltext search
+      final normalizedSearchText = Utility.normalizeString(searchText.toLowerCase());
+      final normalizedName = Utility.normalizeString(product.itemName.toLowerCase());
+      final normalizedCategory = Utility.normalizeString(product.categoryName.toLowerCase());
+      final normalizedPrice = Utility.normalizeString(product.price.toString().toLowerCase());
+
+      final matchesSearch = normalizedSearchText.isEmpty ||
+          normalizedName.contains(normalizedSearchText) ||
+          normalizedCategory.contains(normalizedSearchText) ||
+          normalizedPrice.contains(normalizedSearchText);
+
+      return matchesCategory && matchesOnSale && matchesInStock && matchesSearch;
+    }).toList();
+
+    // 2) Řazení
+    filtered.sort((a, b) {
+      dynamic valueA;
+      dynamic valueB;
+
+      switch (currentSortCriteria) {
+        case 'price':
+          valueA = a.price;
+          valueB = b.price;
+          break;
+        case 'category':
+          valueA = Utility.normalizeString(a.categoryName.toLowerCase());
+          valueB = Utility.normalizeString(b.categoryName.toLowerCase());
+          break;
+        case 'quantity':
+          final qtyA = stockData[a.sku] ?? 0.0;
+          final qtyB = stockData[b.sku] ?? 0.0;
+          valueA = qtyA;
+          valueB = qtyB;
+          break;
+        case 'name':
+        default:
+          valueA = Utility.normalizeString(a.itemName.toLowerCase());
+          valueB = Utility.normalizeString(b.itemName.toLowerCase());
+          break;
+      }
+
+      return currentSortAscending
+          ? Comparable.compare(valueA, valueB)
+          : Comparable.compare(valueB, valueA);
+    });
+
+    // 3) Uložíme do state
+    setState(() {
+      filteredProducts = filtered;
+    });
   }
 
+  // -- Metoda pro zobrazení sort dialogu --
   void _showSortDialog(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     showDialog(
@@ -295,9 +259,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  // -- Metoda pro aplikaci konkrétního sortu (volaná z dialogu) --
+  void _applySorting(String criteria, bool ascending) {
+    setState(() {
+      currentSortCriteria = criteria;
+      currentSortAscending = ascending;
+      _applyAllFiltersAndSorting(productProvider);
+    });
+  }
+
+  // -- Metoda pro otevření filter dialogu (vybírání kategorie atd.) --
   void _showCategoryFilterDialog(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
+
+    // Znovu fetch kategorií (pokud by se mezitím něco změnilo)
     await productProvider.fetchCategories();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -359,6 +336,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
+                  // Aplikace filtru
                   _applyAllFiltersAndSorting(productProvider);
                   Navigator.of(context).pop();
                 },
@@ -371,63 +349,144 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _applySorting(String criteria, bool ascending) {
-    setState(() {
-      currentSortCriteria = criteria;
-      currentSortAscending = ascending;
-      _applyAllFiltersAndSorting(productProvider);
-    });
-  }
+  // -- Hlavní build() --
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
 
-  void _applyAllFiltersAndSorting(ProductProvider provider) {
-    final filtered = provider.products.where((product) {
-      final matchesCategory =
-          (currentCategoryId == null || currentCategoryId!.isEmpty) ||
-              product.categoryId == currentCategoryId;
-      final matchesOnSale = !showOnlyOnSale || product.onSale;
-      final matchesInStock = !showOnlyInStock ||
-          (product.sku != null &&
-              stockData[product.sku] != null &&
-              stockData[product.sku]! > 0);
-      final normalizedSearchText = Utility.normalizeString(searchText.toLowerCase());
-      final normalizedProductName = Utility.normalizeString(product.itemName.toLowerCase());
-      final normalizedCategoryName = Utility.normalizeString(product.categoryName.toLowerCase());
-      final normalizedPrice = Utility.normalizeString(product.price.toString().toLowerCase());
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          localizations.translate('productsTitle'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.grey[850],
+        actions: <Widget>[
+          // Ikona hledání
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            tooltip: localizations.translate('searchTooltip'),
+            onPressed: () {
+              setState(() {
+                isSearchActive = !isSearchActive;
+                if (!isSearchActive) {
+                  // Když zavřeme search, zrušíme text
+                  searchText = "";
+                  _applyAllFiltersAndSorting(productProvider);
+                }
+              });
+            },
+          ),
+          // Ikona řazení
+          IconButton(
+            icon: const Icon(Icons.sort, color: Colors.white),
+            tooltip: localizations.translate('sortTooltip'),
+            onPressed: () => _showSortDialog(context),
+          ),
+          // Ikona filtru
+          IconButton(
+            icon: const Icon(Icons.filter_alt_sharp, color: Colors.white),
+            tooltip: localizations.translate('filterTooltip'),
+            onPressed: () => _showCategoryFilterDialog(context),
+          ),
+        ],
+        // Pokud je search aktivní, zobrazíme TextField v bottom:
+        bottom: isSearchActive
+            ? PreferredSize(
+          preferredSize: const Size.fromHeight(48.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: localizations.translate('searchForProduct'),
+                hintStyle: const TextStyle(color: Colors.grey),
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0),
+              ),
+              style: const TextStyle(color: Colors.black),
+              onChanged: (value) => _applySearch(value, productProvider),
+            ),
+          ),
+        )
+            : null,
+      ),
 
-      final matchesSearch = normalizedSearchText.isEmpty ||
-          normalizedProductName.contains(normalizedSearchText) ||
-          normalizedCategoryName.contains(normalizedSearchText) ||
-          normalizedPrice.contains(normalizedSearchText);
+      // Tady použijeme Consumer, abychom nejprve reagovali na isLoading:
+      body: Consumer<ProductProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-      return matchesCategory &&
-          matchesOnSale &&
-          matchesInStock &&
-          matchesSearch;
-    }).toList();
+          // V tuto chvíli isLoading == false.
+          // Nyní zkontrolujeme `filteredProducts`
+          if (filteredProducts.isEmpty) {
+            // Může to být i localizations.translate('noProductsAvailable')
+            return Center(
+              child: Text('Žádné produkty k zobrazení.'),
+            );
+          }
 
-    filtered.sort((a, b) {
-      dynamic valueA;
-      dynamic valueB;
-      if (currentSortCriteria == 'name') {
-        valueA = Utility.normalizeString(a.itemName.toLowerCase());
-        valueB = Utility.normalizeString(b.itemName.toLowerCase());
-      } else if (currentSortCriteria == 'price') {
-        valueA = a.price;
-        valueB = b.price;
-      } else if (currentSortCriteria == 'category') {
-        valueA = Utility.normalizeString(a.categoryName.toLowerCase());
-        valueB = Utility.normalizeString(b.categoryName.toLowerCase());
-      } else if (currentSortCriteria == 'quantity') {
-        valueA = stockData[a.sku] ?? 0.0;
-        valueB = stockData[b.sku] ?? 0.0;
-      }
-      return currentSortAscending
-          ? Comparable.compare(valueA, valueB)
-          : Comparable.compare(valueB, valueA);
-    });
+          // Jinak zobrazíme reálná data.
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: filteredProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = filteredProducts[index];
+                    return ProductWidget(
+                      product: product,
+                      categories: provider.categories,
+                      stockQuantity: stockData[product.sku],
+                      isExpanded: expandedProductId == product.itemId,
+                      onExpand: () {
+                        setState(() {
+                          if (expandedProductId == product.itemId) {
+                            expandedProductId = null;
+                          } else {
+                            expandedProductId = product.itemId;
+                          }
+                        });
+                      },
+                      highlightText: searchText,
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
 
-    setState(() {
-      filteredProducts = filtered;
-    });
+      // FAB pro přidání nového produktu
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          // Než otevřeme EditProductScreen, chceme mít i kategorie
+          await productProvider.fetchCategories();
+
+          final result = await Navigator.of(context).push<bool?>(
+            MaterialPageRoute(
+              builder: (context) => EditProductScreen(
+                categories: productProvider.categories,
+                product: null,
+              ),
+            ),
+          );
+
+          // Pokud se vrátí true, re-fetch products
+          if (result == true) {
+            await productProvider.fetchProducts();
+            _applyAllFiltersAndSorting(productProvider);
+          }
+        },
+        backgroundColor: Colors.grey[850],
+        tooltip: localizations.translate('addNewProduct'),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
   }
 }

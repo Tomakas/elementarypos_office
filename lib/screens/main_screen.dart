@@ -1,10 +1,13 @@
+// lib/screens/main_screen.dart
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
-import 'settings_screen.dart';
+// SettingsScreen se nyní bude volat z MenuScreen
+// import 'settings_screen.dart';
 import 'customers_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/product_list_screen.dart';
 import '../screens/receipt_list_screen.dart';
+import 'menu_screen.dart'; // <-- Import nové MenuScreen
 
 class MainScreen extends StatefulWidget {
   final Future<void> Function(String) updateApiKey;
@@ -33,8 +36,9 @@ class _MainScreenState extends State<MainScreen> {
       const ReceiptListScreen(),
       const ProductListScreen(),
       const CustomersScreen(),
-      SettingsScreen(
-        updateApiKey: widget.updateApiKey,
+      // Pátá obrazovka bude nyní MenuScreen
+      MenuScreen(
+        updateApiKey: widget.updateApiKey, // Předání parametrů
         onLanguageChange: widget.onLanguageChange,
       ),
     ];
@@ -49,9 +53,13 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-
     return Scaffold(
-      body: _screens[_selectedIndex],
+      // AppBar se již nebude definovat zde, ale v každé jednotlivé obrazovce (Dashboard, Receipts, atd.)
+      // Drawer také nebude zde, protože jej nahrazuje MenuScreen
+      body: IndexedStack( // IndexedStack zachovává stav jednotlivých obrazovek
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -61,7 +69,7 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.grey[850],
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.bar_chart_outlined),
+            icon: const Icon(Icons.dashboard),
             label: localizations?.translate('dashboardTitle'),
           ),
           BottomNavigationBarItem(
@@ -76,9 +84,10 @@ class _MainScreenState extends State<MainScreen> {
             icon: const Icon(Icons.people),
             label: localizations?.translate('customersTitle'),
           ),
+          // Změna páté položky
           BottomNavigationBarItem(
-            icon: const Icon(Icons.settings),
-            label: localizations?.translate('settingsTitle'),
+            icon: const Icon(Icons.menu), // Ikona pro Menu
+            label: localizations?.translate('menuMore'), // Nový lokalizační klíč pro "Více" nebo "Menu"
           ),
         ],
       ),

@@ -144,6 +144,10 @@
   "invalidPurchasePriceFormat": "Neplatný formát nákupní ceny",
   "invalidSellingPriceFormat": "Neplatný formát prodejní ceny",
   "deleteError": "Chyba při mazání produktu",
-  "noProductsMatchFilter": "Žádné produkty neodpovídají filtru"
+  "noProductsMatchFilter": "Žádné produkty neodpovídají filtru",
+  "purchasesTitle": "Nákup",
+  "menuPurchases": "Nákup",
+  "menuTitle": "Menu",
+  "menuMore": "Více"
 
 }

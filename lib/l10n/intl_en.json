@@ -148,7 +148,11 @@
   "invalidPurchasePriceFormat": "Invalid purchase price format",
   "invalidSellingPriceFormat": "Invalid selling price format",
   "deleteError": "Error deleting product",
-  "noProductsMatchFilter": "No products match the filter"
+  "noProductsMatchFilter": "No products match the filter",
+  "purchasesTitle": "Purchases",
+  "menuPurchases": "Purchases",
+  "menuTitle": "Menu",
+  "menuMore": "More"
 
 
 }

@@ -1,4 +1,4 @@
-//lib/services/dashboard_widgets.dart
+// lib/services/api_service.dart
 
 import 'dart:convert';
 import 'dart:async';
@@ -255,7 +255,7 @@ static Future<dynamic> _makeRequest(
   static Future<String> createCustomer(
       Map<String, dynamic> customerData) async {
     final url = Uri.parse('$baseUrl/customer/create-customer');
-    print('Creating Custumer: $url');
+    print('Creating Customer: $url');
 
     final data = await _makeRequest(
       url,

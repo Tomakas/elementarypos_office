@@ -142,7 +142,13 @@
   "editDashboard": "Edit dashboard",
   "finishEditing": "Finish editing",
   "selectLanguage": "Select language",
-  "searchForCustomer": "Search for Customer"
+  "searchForCustomer": "Search for Customer",
+  "sellingPriceLabel": "Selling Price",
+  "purchasePriceLabel": "Purchase Price",
+  "invalidPurchasePriceFormat": "Invalid purchase price format",
+  "invalidSellingPriceFormat": "Invalid selling price format",
+  "deleteError": "Error deleting product",
+  "noProductsMatchFilter": "No products match the filter"
 
 
 }

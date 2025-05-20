@@ -263,30 +263,30 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final receiptProvider = Provider.of<ReceiptProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         title:
         Text(localizations.translate('salesTitle'), style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.grey[850],
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.date_range, color: Colors.white),
+            icon: const Icon(Icons.date_range),
             tooltip: localizations.translate('dateRangeTooltip'),
             onPressed: () {
               _showDateRangePickerfilter(context);
             },
           ),
           IconButton(
-            icon: const Icon(Icons.sort, color: Colors.white),
+            icon: const Icon(Icons.sort),
             tooltip: localizations.translate('sortReceipts'),
             onPressed: () {
               _showSortDialog(context);
             },
           ),
           IconButton(
-            icon: const Icon(Icons.filter_alt_sharp, color: Colors.white),
+            icon: const Icon(Icons.filter_alt_sharp),
             tooltip: localizations.translate('filterTooltip'),
             onPressed: () {
               _showFilterDialog(context);

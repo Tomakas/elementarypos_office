@@ -1,21 +1,22 @@
+// lib/screens/edit_product_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
 import '../l10n/app_localizations.dart';
-import '../services/utility_services.dart'; // Důležité pro načtení API klíče ze StorageService
+import '../services/utility_services.dart';
 
 class EditProductScreen extends StatefulWidget {
   final List<Map<String, dynamic>> categories;
   final Product? product;
-  final bool isCopy; // Nový parametr
+  final bool isCopy;
 
   const EditProductScreen({
     super.key,
     required this.categories,
     this.product,
-    this.isCopy = false, // Defaultně false
+    this.isCopy = false,
   });
 
   @override
@@ -31,7 +32,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   List<Map<String, dynamic>> _taxSettings = [];
 
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _sellingPriceController = TextEditingController();
+  final TextEditingController _purchasePriceController = TextEditingController();
   final TextEditingController _skuController = TextEditingController();
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
@@ -40,15 +42,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
   void initState() {
     super.initState();
     _loadTaxSettings();
-
-    // Rozlišení mezi edit, new a copy:
     if (widget.product != null) {
-      // a) je to EDIT (widget.isCopy == false)
-      // b) je to COPY (widget.isCopy == true)
-      //
-      // V obou případech vyplníme formulář daty z původního produktu
       _nameController.text = widget.product!.itemName;
-      _priceController.text = widget.product!.price.toStringAsFixed(2);
+      _sellingPriceController.text = widget.product!.sellingPrice.toStringAsFixed(2);
+      _purchasePriceController.text = widget.product!.purchasePrice?.toStringAsFixed(2) ?? '';
       _skuController.text = widget.product!.sku ?? '';
       _codeController.text = widget.product!.code.toString();
       _noteController.text = widget.product!.note ?? '';
@@ -56,14 +53,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       _selectedTaxId = widget.product!.taxId;
       _selectedColor = widget.product!.color;
       _onSale = widget.product!.onSale;
-
-      // Pokud je to COPY, vynulujeme itemId,
-      // aby API bralo tento produkt jako nový (a vygenerovalo nové itemId).
-      if (widget.isCopy) {
-        // Případně vynulování dalších polí, pokud by bylo žádoucí.
-      }
     }
-    // Pokud je product == null => je to nový produkt -> formulář je prázdný
   }
 
   Future<void> _loadTaxSettings() async {
@@ -71,22 +61,27 @@ class _EditProductScreenState extends State<EditProductScreen> {
       final storedApiKey = await StorageService.getApiKey();
       if (storedApiKey == null || storedApiKey.isEmpty) {
         print('Error: API key not available.');
+        // Consider showing an error message to the user
         return;
       }
 
       final taxSettings = await ApiService.fetchTaxSettings();
-      setState(() {
-        _taxSettings = taxSettings;
-      });
+      if (mounted) {
+        setState(() {
+          _taxSettings = taxSettings;
+        });
+      }
     } catch (e) {
       print('Error loading tax settings: $e');
+      // Consider showing an error message to the user
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
+    _sellingPriceController.dispose();
+    _purchasePriceController.dispose();
     _skuController.dispose();
     _codeController.dispose();
     _noteController.dispose();
@@ -96,11 +91,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
-    // Nastavíme nadpis obrazovky
-    // 1) Pokud product == null => "Vytvoření produktu"
-    // 2) Pokud product != null && isCopy => "Vytvoření produktu" (kopie)
-    // 3) Jinak => "Upravit produkt"
     final bool isCreating = (widget.product == null || widget.isCopy);
     final screenTitle = isCreating
         ? localizations.translate('createProduct')
@@ -127,7 +117,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   localizations.translate('productName'), _nameController),
               const SizedBox(height: 16),
               _buildTextField(
-                  localizations.translate('price'), _priceController,
+                  localizations.translate('sellingPriceLabel'), // PŘIDAT DO LOKALIZACE
+                  _sellingPriceController,
+                  isNumber: true),
+              const SizedBox(height: 16),
+              _buildTextField(
+                  localizations.translate('purchasePriceLabel'), // PŘIDAT DO LOKALIZACE
+                  _purchasePriceController,
                   isNumber: true),
               const SizedBox(height: 16),
               _buildCategoryDropdown(localizations),
@@ -180,10 +176,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
         Text(localizations.translate('category'),
             style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
-        DropdownButton<String>(
+        DropdownButtonFormField<String>( // Použito DropdownButtonFormField pro lepší vzhled a integraci
           value: _selectedCategoryId,
           isExpanded: true,
           hint: Text(localizations.translate('selectCategory')),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
           items: widget.categories.map((category) {
             return DropdownMenuItem<String>(
               value: category['categoryId'],
@@ -202,14 +199,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   Widget _buildColorPickerRow(AppLocalizations localizations) {
     final colors = [
-      Colors.green,
-      Colors.lightBlue,
-      Colors.blue,
-      Colors.yellow,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.brown.shade300,
+      Colors.green, Colors.lightBlue, Colors.blue, Colors.yellow,
+      Colors.orange, Colors.purple, Colors.red, Colors.brown.shade300,
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,15 +246,16 @@ class _EditProductScreenState extends State<EditProductScreen> {
         Text(localizations.translate('taxRate'),
             style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
-        DropdownButton<String>(
+        DropdownButtonFormField<String>( // Použito DropdownButtonFormField
           value: _selectedTaxId,
           isExpanded: true,
           hint: Text(localizations.translate('selectTaxRate')),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
           items: _taxSettings.map((tax) {
             final percent = (tax['percent'] ?? 0) * 100;
             return DropdownMenuItem<String>(
               value: tax['taxId'],
-              child: Text('${tax['name']} ($percent%)'),
+              child: Text('${tax['name']} (${percent.toStringAsFixed(0)}%)'), // Upraveno pro zobrazení procent
             );
           }).toList(),
           onChanged: (value) {
@@ -296,10 +288,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   Future<void> _saveProduct() async {
     final localizations = AppLocalizations.of(context)!;
-
-    // Základní validace
     if (_nameController.text.isEmpty ||
-        _priceController.text.isEmpty ||
+        _sellingPriceController.text.isEmpty ||
         _selectedCategoryId == null ||
         _selectedTaxId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -308,38 +298,61 @@ class _EditProductScreenState extends State<EditProductScreen> {
       return;
     }
 
-    // Rozhodneme, zda se jedná o novou entitu nebo editaci
     final bool isCreating = (widget.product == null || widget.isCopy);
-
-    // Pokud je to nová entita => itemId prázdný (aby se na serveru vytvořil nový)
     final itemId = isCreating ? '' : (widget.product?.itemId ?? '');
+
+    double? purchasePrice;
+    if (_purchasePriceController.text.isNotEmpty) {
+      purchasePrice = double.tryParse(_purchasePriceController.text.replaceAll(',', '.')); // Handle comma as decimal separator
+      if (purchasePrice == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(localizations.translate('invalidPurchasePriceFormat'))), // PŘIDAT DO LOKALIZACE
+        );
+        return;
+      }
+    }
+
+    double? sellingPrice = double.tryParse(_sellingPriceController.text.replaceAll(',', '.'));
+    if (sellingPrice == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.translate('invalidSellingPriceFormat'))), // PŘIDAT DO LOKALIZACE
+      );
+      return;
+    }
+
     final newProduct = Product(
       itemId: itemId,
       itemName: _nameController.text,
-      price: double.parse(_priceController.text),
+      sellingPrice: sellingPrice,
+      purchasePrice: purchasePrice,
       sku: _skuController.text,
       code: int.tryParse(_codeController.text) ?? 0,
       note: _noteController.text,
       categoryId: _selectedCategoryId!,
       categoryName: widget.categories
-          .firstWhere((c) => c['categoryId'] == _selectedCategoryId)['name'],
-      currency: 'CZK',
+          .firstWhere((c) => c['categoryId'] == _selectedCategoryId, orElse: () => {'name': 'Unknown'})['name'],
+      currency: 'CZK', // Mělo by být konfigurovatelné
       taxId: _selectedTaxId!,
       color: _selectedColor,
       onSale: _onSale,
     );
 
-    final productProvider =
-        Provider.of<ProductProvider>(context, listen: false);
-    if (isCreating) {
-      // Vytvoření nového produktu
-      await productProvider.addProduct(newProduct);
-    } else {
-      // Editace stávajícího produktu
-      await productProvider.editProduct(newProduct);
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    try {
+      if (isCreating) {
+        await productProvider.addProduct(newProduct);
+      } else {
+        await productProvider.editProduct(newProduct);
+      }
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving product: $e')), // Obecná chybová hláška
+        );
+      }
     }
-
-    Navigator.of(context)
-        .pop(true); // Vrátíme se s hodnotou true => "došlo ke změně"
   }
 }

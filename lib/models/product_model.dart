@@ -1,3 +1,4 @@
+// lib/models/product_model.dart
 import 'package:flutter/material.dart';
 
 class Product {
@@ -5,7 +6,8 @@ class Product {
   final int code;
   final String itemName;
   final String taxId;
-  final double price;
+  final double sellingPrice; // Přejmenováno z price
+  final double? purchasePrice; // Nové pole pro nákupní cenu
   final String currency;
   final int color;
   final String? sku;
@@ -19,7 +21,8 @@ class Product {
     required this.code,
     required this.itemName,
     required this.taxId,
-    required this.price,
+    required this.sellingPrice, // Aktualizováno
+    this.purchasePrice, // Přidáno
     required this.currency,
     required this.color,
     this.sku,
@@ -35,7 +38,8 @@ class Product {
       code: json['code'] ?? 0,
       itemName: json['itemName'] ?? 'Unknown product',
       taxId: json['taxId'] ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      sellingPrice: (json['sellingPrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0, // Aktualizováno, zachována zpětná kompatibilita pro 'price'
+      purchasePrice: (json['purchasePrice'] as num?)?.toDouble(), // Přidáno
       currency: json['currency'] ?? 'CZK',
       color: json['color'] ?? 1,
       sku: json['sku'],
@@ -52,7 +56,8 @@ class Product {
       'code': code,
       'itemName': itemName,
       'taxId': taxId,
-      'price': price,
+      'sellingPrice': sellingPrice, // Aktualizováno
+      'purchasePrice': purchasePrice, // Přidáno
       'currency': currency,
       'color': color,
       'sku': sku,

@@ -62,14 +62,15 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.grey[850],
         title: Text(
           localizations.translate('customersTitle'),
           style: const TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.grey[850],
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search),
             tooltip: localizations.translate('searchTooltip'),
             onPressed: () {
               setState(() {

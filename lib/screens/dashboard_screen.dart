@@ -1,6 +1,5 @@
 // lib/screens/dashboard_screen.dart
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/dashboard_widget_model.dart';
@@ -124,17 +123,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.grey[400], // Barva pozadí Scaffoldu
+      backgroundColor: Colors.grey[400],
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.grey[850],
         title: Text(localizations.translate('dashboardTitle'),
             style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.grey[850],
         actions: <Widget>[
           if (!isEditMode)
             IconButton(
               icon: const Icon(
                 Icons.edit,
-                color: Colors.white,
               ),
               tooltip: localizations.translate('edit'),
               onPressed: _enterEditMode,
@@ -143,12 +142,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             IconButton(
               icon: const Icon(Icons.check),
               tooltip: localizations.translate('finishEditing'),
-              color: Colors.white,
               onPressed: _exitEditMode,
             ),
             IconButton(
               icon: const Icon(Icons.add),
-              color: Colors.white,
               tooltip: localizations.translate('addWidget'),
               onPressed: () => _showAddWidgetDialog(context),
             ),

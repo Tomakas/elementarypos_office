@@ -1,3 +1,4 @@
+// lib/widgets/product_widget.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product_model.dart';
@@ -85,7 +86,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ExpandableText( // Použití ExpandableText
+                              ExpandableText(
                                 text: widget.product.itemName,
                                 highlight: widget.highlightText,
                                 defaultTextStyle: TextStyle(
@@ -96,14 +97,14 @@ class _ProductWidgetState extends State<ProductWidget> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              ExpandableText( // Použití ExpandableText
+                              ExpandableText(
                                 text: '${localizations.translate("category")}: $categoryName',
                                 highlight: widget.highlightText,
                                 defaultTextStyle: const TextStyle(color: Colors.grey, fontSize: 16),
                               ),
                               const SizedBox(height: 4),
-                              ExpandableText( // Použití ExpandableText
-                                text: '${localizations.translate("price")}: ${Utility.formatCurrency(widget.product.price)}',
+                              ExpandableText(
+                                text: '${localizations.translate("price")}: ${Utility.formatCurrency(widget.product.sellingPrice)}', // Použita sellingPrice
                                 highlight: widget.highlightText,
                                 defaultTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
                               ),
@@ -232,7 +233,7 @@ class _ProductWidgetState extends State<ProductWidget> {
   }
 
   void _showStockChangeDialog(BuildContext context, {required String title}) {
-    int currentValue = 0;
+    int currentValue = widget.stockQuantity?.toInt() ?? 0; // Initialize with current stock
     showDialog(
       context: context,
       builder: (context) {
@@ -250,7 +251,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                     },
                   ),
                   SizedBox(
-                    width: 50,
+                    width: 60, // Increased width for better display
                     child: TextField(
                       textAlign: TextAlign.center,
                       controller: TextEditingController(text: currentValue.toString()),
@@ -280,7 +281,9 @@ class _ProductWidgetState extends State<ProductWidget> {
                 ),
                 TextButton(
                   onPressed: () {
-                    print('$title: $currentValue');
+                    // Zde by měla být logika pro aktualizaci stavu skladu přes ProductProvider
+                    print('Stock change confirmed for ${widget.product.itemName}: $currentValue');
+                    // productProvider.updateStock(widget.product.itemId, currentValue); // Příklad
                     Navigator.of(context).pop();
                   },
                   child: Text(localizations.translate("confirm")),
@@ -311,25 +314,29 @@ class _ProductWidgetState extends State<ProductWidget> {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Close dialog first
                 final productProvider = Provider.of<ProductProvider>(context, listen: false);
                 try {
                   await productProvider.deleteProduct(widget.product.itemId);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${localizations.translate("productDeleted")}: ${widget.product.itemName}',
+                  if (mounted) { // Check if the widget is still in the tree
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${localizations.translate("productDeleted")}: ${widget.product.itemName}',
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${localizations.translate("deleteError")}: $e',
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${localizations.translate("deleteError")}: $e', // Přidat "deleteError" do lokalizace
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
                 }
               },
               child: Text(localizations.translate("delete")),
@@ -341,7 +348,6 @@ class _ProductWidgetState extends State<ProductWidget> {
   }
 }
 
-// Pomocný widget pro obalení textu a zajištění zvýraznění
 class ExpandableText extends StatelessWidget {
   final String text;
   final String? highlight;
@@ -368,22 +374,22 @@ class ExpandableText extends StatelessWidget {
     while (true) {
       final index = normalizedText.indexOf(normalizedHighlight, start);
       if (index == -1) {
-        spans.add(TextSpan(text: text.substring(start)));
+        spans.add(TextSpan(text: text.substring(start), style: defaultTextStyle.copyWith(backgroundColor: Colors.transparent))); // Ensure default style
         break;
       }
       if (index > start) {
-        spans.add(TextSpan(text: text.substring(start, index)));
+        spans.add(TextSpan(text: text.substring(start, index), style: defaultTextStyle.copyWith(backgroundColor: Colors.transparent)));
       }
       spans.add(TextSpan(
         text: text.substring(index, index + highlight!.length),
-        style: const TextStyle(backgroundColor: Colors.yellow),
+        style: defaultTextStyle.copyWith(backgroundColor: Colors.yellow), // Apply highlight to default style
       ));
       start = index + highlight!.length;
     }
 
     return RichText(
       text: TextSpan(
-        style: defaultTextStyle,
+        // style: defaultTextStyle, // Celkový styl pro RichText není nutný, pokud ho mají TextSpans
         children: spans,
       ),
     );

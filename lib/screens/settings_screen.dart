@@ -87,8 +87,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextField(
               controller: _apiKeyController,
               decoration: InputDecoration(
-                filled: true, // Přidáme výplň
-                fillColor: Colors.white, // Nastavíme bílou barvu pozadí
+                filled: true,
+                fillColor: Colors.white,
                 border: const OutlineInputBorder(),
               ),
             ),

@@ -61,7 +61,7 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.grey[850],
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.dashboard),
+            icon: const Icon(Icons.bar_chart_outlined),
             label: localizations?.translate('dashboardTitle'),
           ),
           BottomNavigationBarItem(

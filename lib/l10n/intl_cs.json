@@ -138,6 +138,12 @@
   "selectLanguage": "Vyberte jazyk",
   "topProducts": "Nejprodávanější produkty",
 
-  "searchForCustomer": "Vyhledej zákazníka"
+  "searchForCustomer": "Vyhledej zákazníka",
+  "sellingPriceLabel": "Prodejní cena",
+  "purchasePriceLabel": "Nákupní cena",
+  "invalidPurchasePriceFormat": "Neplatný formát nákupní ceny",
+  "invalidSellingPriceFormat": "Neplatný formát prodejní ceny",
+  "deleteError": "Chyba při mazání produktu",
+  "noProductsMatchFilter": "Žádné produkty neodpovídají filtru"
 
 }

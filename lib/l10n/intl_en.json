@@ -152,7 +152,32 @@
   "purchasesTitle": "Purchases",
   "menuPurchases": "Purchases",
   "menuTitle": "Menu",
-  "menuMore": "More"
+  "menuMore": "More",
+  "purchasesTitle": "Purchases",
+  "menuPurchases": "Purchases",
+  "newPurchaseTitle": "New Purchase",
+  "addPurchase": "Add Purchase",
+  "supplier": "Supplier",
+  "selectSupplier": "Select Supplier",
+  "purchaseDate": "Purchase Date",
+  "selectDate": "Select Date",
+  "purchaseItems": "Purchase Items",
+  "addProductItem": "Add Item",
+  "product": "Product",
+  "selectProduct": "Select Product",
+  "quantity": "Quantity",
+  "enterQuantity": "Enter quantity",
+  "unitPrice": "Unit Price",
+  "enterUnitPrice": "Enter unit price",
+  "totalItemPrice": "Total Item Price",
+  "enterTotalItemPrice": "Enter total item price",
+  "totalPurchasePrice": "Total Purchase Price",
+  "savePurchase": "Save Purchase",
+  "removeItem": "Remove Item",
+  "purchaseNumber": "Purchase No./Document",
+  "enterPurchaseNumber": "Enter document number",
+  "notes": "Notes",
+  "enterNotes": "Enter notes"
 
 
 }

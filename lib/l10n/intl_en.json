@@ -6,9 +6,6 @@
   "productsTitle": "Products",
   "customersTitle": "Customers",
   "settingsTitle": "Settings",
-
-
-
   "changeLanguage": "Change Language",
   "saveApiKey": "Save API Key",
   "apiKeyLabel": "API Key",
@@ -63,8 +60,6 @@
   "add": "Add",
   "errorLoadingData": "Error loading data",
   "noReceipts": "No receipts found.",
-
-
   "priceAscending": "Price (Ascending)",
   "priceDescending": "Price (Descending)",
   "timeAscending": "Time (Ascending)",
@@ -77,7 +72,6 @@
   "discountFilter": "Only Discounts",
   "applyFilters": "Apply Filters",
   "currency": "$",
-
   "searchTooltip": "Search",
   "filterTooltip": "Filter",
   "sortTooltip": "Sort",
@@ -92,9 +86,7 @@
   "selectCategory": "Select Category",
   "onlyOnSale": "Only On Sale",
   "applyFilter": "Apply Filter",
-
   "allCategories": "All Categories",
-
   "editProduct": "Edit Product",
   "saveProduct": "Save Product",
   "productName": "Product Name",
@@ -106,28 +98,19 @@
   "selectTaxRate": "Select Tax Rate",
   "note": "Note",
   "fillAllFields": "Fill in all fields",
-
   "stockItems": "Stock items only",
-
   "topCategories": "Top categories",
-
   "unknownCategory": "Unknown category",
-
   "edit": "Edit",
   "copy": "Copy",
   "delete": "Delete",
   "changeStock": "Change stock",
   "changeStockTitle": "Change Stock Status",
-
   "createProduct": "Create product",
-
-
   "confirm": "Confirm",
   "deleteProduct": "Delete product",
   "confirmDelete": "Are you sure you want to delete this product?",
   "productDeleted": "Product has been deleted",
-
-
   "merge": "Merge",
   "customerSales": "Sales",
   "notAvailable": "N/A",
@@ -153,8 +136,6 @@
   "menuPurchases": "Purchases",
   "menuTitle": "Menu",
   "menuMore": "More",
-  "purchasesTitle": "Purchases",
-  "menuPurchases": "Purchases",
   "newPurchaseTitle": "New Purchase",
   "addPurchase": "Add Purchase",
   "supplier": "Supplier",
@@ -177,7 +158,14 @@
   "purchaseNumber": "Purchase No./Document",
   "enterPurchaseNumber": "Enter document number",
   "notes": "Notes",
-  "enterNotes": "Enter notes"
-
-
+  "enterNotes": "Enter notes",
+  "fieldRequiredError": "This field is required",
+  "invalidQuantityError": "Invalid quantity",
+  "saveChanges": "Save Changes",
+  "editProductItem": "Edit Product Item",
+  "selectSupplierError": "Please select a supplier.",
+  "addAtLeastOneItemError": "Please add at least one item.",
+  "itemValidationError": "Please check all items, some data is missing or invalid.",
+  "priceMissingForItemError": "Price is missing for item",
+  "purchaseSavedLocally": "Purchase has been saved (locally for now)."
 }

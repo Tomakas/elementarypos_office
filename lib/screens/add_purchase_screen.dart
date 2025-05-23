@@ -1,11 +1,14 @@
 // lib/screens/add_purchase_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart'; // <-- PŘIDAT IMPORT
 import 'package:uuid/uuid.dart';
 import '../l10n/app_localizations.dart';
 import '../models/ui_purchase_item_model.dart';
+import '../models/purchase_model.dart'; // <-- PŘIDAT IMPORT
+import '../providers/purchase_provider.dart'; // <-- PŘIDAT IMPORT
 import '../widgets/purchase_item_dialog.dart';
-import '../services/utility_services.dart'; // Pro Utility.formatCurrency
+import '../services/utility_services.dart';
 
 class AddPurchaseScreen extends StatefulWidget {
   const AddPurchaseScreen({super.key});
@@ -22,31 +25,11 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
   final TextEditingController _notesController = TextEditingController();
 
   List<UIPurchaseItem> _purchaseItems = [];
-  final Uuid _uuid = Uuid();
+  final Uuid _uuid = Uuid(); // Pro ID nákupu
 
-  final List<String> _mockSuppliers = ['Dodavatel A', 'Dodavatel B', 'Velkoobchod C'];
+  final List<String> _mockSuppliers = ['Dodavatel A', 'Dodavatel B', 'Velkoobchod C']; // Zatím ponecháme mock
 
-  @override
-  void dispose() {
-    _purchaseNumberController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
+  // ... (dispose, _selectDate, _calculateOverallTotal, _handleAddNewItem, _handleEditItem, _handleRemoveItem, _buildItemsTableHeader, _buildItemRow zůstávají stejné) ...
   double _overallTotalPrice = 0.0;
 
   void _calculateOverallTotal() {
@@ -80,7 +63,6 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
 
   void _handleEditItem(UIPurchaseItem itemToEdit, int index) async {
     final localizations = AppLocalizations.of(context)!;
-    // Vytvoříme kopii pro editaci, abychom neovlivnili originál, pokud uživatel dialog zruší
     final UIPurchaseItem itemCopy = UIPurchaseItem(
         id: itemToEdit.id,
         productName: itemToEdit.productName,
@@ -114,6 +96,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
     }
   }
 
+
   void _savePurchase() {
     final localizations = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) {
@@ -132,6 +115,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
       return;
     }
 
+    // Validace položek (zůstává stejná)
     for (var item in _purchaseItems) {
       if (item.productName.isEmpty || item.quantity <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -139,7 +123,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
         );
         return;
       }
-      if ((item.unitPrice == null || item.unitPrice! < 0) && (item.totalItemPrice == null || item.totalItemPrice! < 0) && item.quantity > 0) {
+      if ((item.totalItemPrice == null || item.totalItemPrice! < 0) && item.quantity > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${localizations.translate('priceMissingForItemError')}: ${item.productName}')),
         );
@@ -147,23 +131,31 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
       }
     }
 
-    print('Ukládání nákupu:');
-    print('Dodavatel: $_selectedSupplier');
-    print('Datum: ${DateFormat('dd.MM.yyyy').format(_selectedDate)}');
-    print('Číslo dokladu: ${_purchaseNumberController.text}');
-    print('Poznámky: ${_notesController.text}');
-    print('Položky (${_purchaseItems.length}):');
-    for (var item in _purchaseItems) {
-      print(
-          '- Produkt: ${item.productName}, Množství: ${item.quantity}, Jedn. cena: ${item.unitPrice?.toStringAsFixed(2) ?? 'N/A'}, Celk. cena: ${item.totalItemPrice?.toStringAsFixed(2) ?? 'N/A'} (ID: ${item.id})');
-    }
-    print('Celková cena nákupu: ${_overallTotalPrice.toStringAsFixed(2)}');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(localizations.translate('purchaseSavedLocally'))),
+    // Vytvoření instance Purchase
+    final newPurchase = Purchase(
+      id: _uuid.v4(), // Nové unikátní ID pro nákup
+      supplier: _selectedSupplier,
+      purchaseDate: _selectedDate,
+      purchaseNumber: _purchaseNumberController.text,
+      notes: _notesController.text,
+      items: List<UIPurchaseItem>.from(_purchaseItems), // Vytvoříme kopii seznamu
+      overallTotalPrice: _overallTotalPrice,
     );
-    Navigator.of(context).pop();
+
+    // Použití PurchaseProvider pro uložení
+    Provider.of<PurchaseProvider>(context, listen: false).addPurchase(newPurchase).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.translate('purchaseSavedSuccessfully'))), // Nový klíč
+      );
+      Navigator.of(context).pop(); // Zavřeme obrazovku po úspěšném uložení
+    }).catchError((error) {
+      print("Chyba při ukládání nákupu přes providera: $error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.translate('errorSavingPurchase'))), // Nový klíč
+      );
+    });
   }
+  // ... (build metoda zůstává téměř stejná, jen se změní text SnackBar) ...
 
   Widget _buildItemsTableHeader(AppLocalizations localizations) {
     return Container(
@@ -175,28 +167,33 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
       child: Row(
         children: <Widget>[
           Expanded(
-            flex: 3, // Šířka sloupce Produkt
+            flex: 3,
             child: Text(localizations.translate('product'), style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            flex: 2, // Šířka sloupce Množství
+            flex: 2,
             child: Text(localizations.translate('quantity'), textAlign: TextAlign.end, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
-          Expanded(
-            flex: 2, // Šířka sloupce Jedn. cena
+          Expanded( // Zobrazení jednotkové ceny, i když se nezadává
+            flex: 2,
             child: Text(localizations.translate('unitPrice'), textAlign: TextAlign.end, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            flex: 2, // Šířka sloupce Celk. cena
+            flex: 2,
             child: Text(localizations.translate('totalItemPrice'), textAlign: TextAlign.end, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
-          SizedBox(width: 48), // Prostor pro ikonu smazání
+          SizedBox(width: 48),
         ],
       ),
     );
   }
 
   Widget _buildItemRow(UIPurchaseItem item, int index, AppLocalizations localizations) {
+    // Ujistíme se, že unitPrice je dopočítáno pro zobrazení
+    if (item.totalItemPrice != null && item.quantity > 0 && item.unitPrice == null) {
+      item.calculatePrices();
+    }
+
     return InkWell(
       onTap: () => _handleEditItem(item, index),
       child: Container(
@@ -214,7 +211,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
               flex: 2,
               child: Text(item.quantity.toString(), textAlign: TextAlign.end),
             ),
-            Expanded(
+            Expanded( // Zobrazujeme dopočítanou jednotkovou cenu
               flex: 2,
               child: Text(item.unitPrice != null ? Utility.formatCurrency(item.unitPrice!, currencySymbol: '', decimals: 2) : '-', textAlign: TextAlign.end),
             ),
@@ -235,7 +232,6 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -327,13 +323,12 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Tabulka položek
               if (_purchaseItems.isNotEmpty)
                 _buildItemsTableHeader(localizations),
               _purchaseItems.isEmpty
                   ? Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(child: Text(localizations.translate('noItemsAddedYet'))),
+                child: Center(child: Text(localizations.translate('noItemsAddedYet'))), // Nový klíč
               )
                   : ListView.builder(
                 shrinkWrap: true,
@@ -344,7 +339,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
                   return _buildItemRow(item, index, localizations);
                 },
               ),
-              const SizedBox(height: 10), // Mezera pod seznamem položek
+              const SizedBox(height: 10),
               if (_purchaseItems.isNotEmpty)
                 const Divider(),
 

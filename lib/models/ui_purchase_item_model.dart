@@ -1,13 +1,11 @@
 // lib/models/ui_purchase_item_model.dart
 
 class UIPurchaseItem {
-  String id; // Unikátní ID pro UI účely (např. UUID)
-  String productName; // Nebo reference na plnohodnotný produkt
+  String id;
+  String productName;
   double quantity;
   double? unitPrice;
   double? totalItemPrice;
-  // Controllery pro textová pole, aby se zachoval stav při rebuild
-  // Tyto by se měly inicializovat a dispose-ovat ve StatefulWidgetu, který je používá
 
   UIPurchaseItem({
     required this.id,
@@ -17,7 +15,6 @@ class UIPurchaseItem {
     this.totalItemPrice,
   });
 
-  // Metoda pro výpočet chybějící ceny
   void calculatePrices() {
     if (quantity == 0) {
       if(unitPrice != null) totalItemPrice = 0;
@@ -26,8 +23,32 @@ class UIPurchaseItem {
     }
     if (unitPrice != null) {
       totalItemPrice = quantity * unitPrice!;
-    } else if (totalItemPrice != null) {
+    } else if (totalItemPrice != null && quantity > 0) { // Přidána kontrola quantity > 0
       unitPrice = totalItemPrice! / quantity;
+    } else if (totalItemPrice != null && quantity == 0) {
+      unitPrice = 0; // Nebo null, podle logiky
     }
+  }
+
+  // Metoda pro převod instance na JSON mapu
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'productName': productName,
+      'quantity': quantity,
+      'unitPrice': unitPrice,
+      'totalItemPrice': totalItemPrice,
+    };
+  }
+
+  // Factory konstruktor pro vytvoření instance z JSON mapy
+  factory UIPurchaseItem.fromJson(Map<String, dynamic> json) {
+    return UIPurchaseItem(
+      id: json['id'] as String,
+      productName: json['productName'] as String,
+      quantity: (json['quantity'] as num).toDouble(),
+      unitPrice: (json['unitPrice'] as num?)?.toDouble(),
+      totalItemPrice: (json['totalItemPrice'] as num?)?.toDouble(),
+    );
   }
 }

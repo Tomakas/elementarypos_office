@@ -6,7 +6,6 @@
   "productsTitle": "Produkty",
   "customersTitle": "Zákazníci",
   "settingsTitle": "Nastavení",
-
   "changeLanguage": "Změna jazyka",
   "saveApiKey": "Uložit API klíč",
   "apiKeyLabel": "API klíč",
@@ -65,23 +64,19 @@
   "filterTitle": "Filtry pro účtenky",
   "cashFilter": "Hotově",
   "cardFilter": "Kartou",
-
   "otherFilter": "Jiné",
   "discountFilter": "Pouze slevy",
   "cancel": "Zrušit",
   "applyFilters": "Použít filtry",
   "currency": "Kč",
-
   "legend": "Legenda",
-
-
   "searchTooltip": "Hledat",
   "filterTooltip": "Filtr",
   "sortTooltip": "Řazení",
   "sortProducts": "Řazení produktů",
   "nameAscending": "Název (Vzestupně)",
   "nameDescending": "Název (Sestupně)",
-   "categoryAscending": "Kategorie (Vzestupně)",
+  "categoryAscending": "Kategorie (Vzestupně)",
   "categoryDescending": "Kategorie (Sestupně)",
   "quantityAscending": "Množství na skladě (Vzestupně)",
   "quantityDescending": "Množství na skladě (Sestupně)",
@@ -89,9 +84,7 @@
   "selectCategory": "Vyberte kategorii",
   "onlyOnSale": "Pouze na prodej",
   "applyFilter": "Použít filtr",
-
   "allCategories": "Všechny kategorie",
-
   "editProduct": "Editace produktu",
   "saveProduct": "Uložit produkt",
   "productName": "Název produktu",
@@ -104,10 +97,7 @@
   "note": "Poznámka",
   "fillAllFields": "Vyplňte všechna pole",
   "stockItems": "Pouze skladové položky",
-
   "topCategories": "Nejprodávanější kategorie",
-
-
   "unknownCategory": "Neznámá kategorie",
   "edit": "Upravit",
   "copy": "Kopírovat",
@@ -118,10 +108,7 @@
   "deleteProduct": "Smazat produkt",
   "confirmDelete": "Opravdu chcete tento produkt smazat?",
   "productDeleted": "Produkt byl smazán",
-
   "createProduct": "Vytvořit product",
-
-
   "merge": "Sloučit",
   "customerSales": "Prodeje",
   "notAvailable": "N/A",
@@ -137,7 +124,6 @@
   "finishEditing": "Ukončit úpravy",
   "selectLanguage": "Vyberte jazyk",
   "topProducts": "Nejprodávanější produkty",
-
   "searchForCustomer": "Vyhledej zákazníka",
   "sellingPriceLabel": "Prodejní cena",
   "purchasePriceLabel": "Nákupní cena",
@@ -149,8 +135,6 @@
   "menuPurchases": "Nákup",
   "menuTitle": "Menu",
   "menuMore": "Více",
-  "purchasesTitle": "Nákup",
-  "menuPurchases": "Nákup",
   "newPurchaseTitle": "Nový nákup",
   "addPurchase": "Přidat nákup",
   "supplier": "Dodavatel",
@@ -173,6 +157,14 @@
   "purchaseNumber": "Číslo nákupu/dokladu",
   "enterPurchaseNumber": "Zadejte číslo dokladu",
   "notes": "Poznámky",
-  "enterNotes": "Zadejte poznámky"
-
+  "enterNotes": "Zadejte poznámky",
+  "fieldRequiredError": "Toto pole je povinné",
+  "invalidQuantityError": "Neplatné množství",
+  "saveChanges": "Uložit změny",
+  "editProductItem": "Upravit položku produktu",
+  "selectSupplierError": "Prosím, vyberte dodavatele.",
+  "addAtLeastOneItemError": "Prosím, přidejte alespoň jednu položku.",
+  "itemValidationError": "Zkontrolujte prosím všechny položky, některé údaje chybí nebo jsou neplatné.",
+  "priceMissingForItemError": "Chybí cena u položky",
+  "purchaseSavedLocally": "Nákup byl uložen (zatím lokálně)."
 }

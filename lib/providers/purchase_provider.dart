@@ -12,53 +12,71 @@ class PurchaseProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   PurchaseProvider() {
+    print('PurchaseProvider: Inicializace, volám loadPurchases...');
     loadPurchases();
   }
 
   Future<void> loadPurchases() async {
+    print('PurchaseProvider: Začátek loadPurchases.');
     _isLoading = true;
-    notifyListeners();
+    notifyListeners(); // Notifikuj o začátku načítání
     _purchases = await _storageService.loadPurchases();
     _isLoading = false;
-    notifyListeners();
-    print('PurchaseProvider: Nákupy načteny, počet: ${_purchases.length}');
+    print('PurchaseProvider: Nákupy načteny, počet: ${_purchases.length}. Volám notifyListeners.');
+    notifyListeners(); // Notifikuj o dokončení načítání a nových datech
   }
 
   Future<void> addPurchase(Purchase purchase) async {
-    _isLoading = true; // Může být krátké, ale pro konzistenci
+    print('PurchaseProvider: Začátek addPurchase pro nákup ID: ${purchase.id}');
+    _isLoading = true;
     notifyListeners();
-    _purchases.add(purchase);
-    // Seřadit nákupy od nejnovějšího po nejstarší
-    _purchases.sort((a, b) => b.purchaseDate.compareTo(a.purchaseDate));
+
+    // Vytvoříme novou instanci seznamu, abychom zajistili, že referenční rovnost se změní
+    // a Consumer/Provider.of si toho všimne jistěji.
+    final List<Purchase> updatedPurchases = List.from(_purchases);
+    updatedPurchases.add(purchase);
+    updatedPurchases.sort((a, b) => b.purchaseDate.compareTo(a.purchaseDate));
+
+    _purchases = updatedPurchases; // Přiřadíme nový seznam
+
+    print('PurchaseProvider: Před uložením, lokální seznam má ${_purchases.length} nákupů.');
     await _storageService.savePurchases(_purchases);
     _isLoading = false;
+    print('PurchaseProvider: Nákup přidán a uložen. Volám notifyListeners. Celkem: ${_purchases.length}');
     notifyListeners();
-    print('PurchaseProvider: Nákup přidán a uložen. Celkem: ${_purchases.length}');
   }
 
   Future<void> updatePurchase(Purchase updatedPurchase) async {
+    print('PurchaseProvider: Začátek updatePurchase pro nákup ID: ${updatedPurchase.id}');
     _isLoading = true;
     notifyListeners();
     final index = _purchases.indexWhere((p) => p.id == updatedPurchase.id);
     if (index != -1) {
-      _purchases[index] = updatedPurchase;
-      _purchases.sort((a, b) => b.purchaseDate.compareTo(a.purchaseDate));
+      final List<Purchase> updatedPurchases = List.from(_purchases);
+      updatedPurchases[index] = updatedPurchase;
+      updatedPurchases.sort((a, b) => b.purchaseDate.compareTo(a.purchaseDate));
+      _purchases = updatedPurchases;
       await _storageService.savePurchases(_purchases);
       print('PurchaseProvider: Nákup s ID ${updatedPurchase.id} aktualizován.');
     } else {
       print('PurchaseProvider: Nákup s ID ${updatedPurchase.id} pro aktualizaci nenalezen.');
     }
     _isLoading = false;
+    print('PurchaseProvider: updatePurchase dokončen. Volám notifyListeners.');
     notifyListeners();
   }
 
   Future<void> deletePurchase(String purchaseId) async {
+    print('PurchaseProvider: Začátek deletePurchase pro nákup ID: $purchaseId');
     _isLoading = true;
     notifyListeners();
-    _purchases.removeWhere((p) => p.id == purchaseId);
+    final List<Purchase> updatedPurchases = List.from(_purchases);
+    updatedPurchases.removeWhere((p) => p.id == purchaseId);
+    _purchases = updatedPurchases;
     await _storageService.savePurchases(_purchases);
     print('PurchaseProvider: Nákup s ID $purchaseId smazán.');
     _isLoading = false;
+    print('PurchaseProvider: deletePurchase dokončen. Volám notifyListeners.');
     notifyListeners();
   }
 

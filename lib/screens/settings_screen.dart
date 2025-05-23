@@ -23,7 +23,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final Map<String, String> _languageOptions = {
     'cs': 'Čeština',
     'en': 'English',
-    'es': 'Español', // Tento jazyk není v supportedLocales v main.dart
   };
   String? _currentLanguageCode;
 

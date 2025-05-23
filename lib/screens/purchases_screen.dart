@@ -57,7 +57,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),

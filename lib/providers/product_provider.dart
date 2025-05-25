@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
 import '../services/utility_services.dart'; // Import StorageService
-import 'dart:convert'; // Pro případné přímé použití JSON, i když to řeší StorageService
 
 class ProductProvider extends ChangeNotifier {
   List<Product> products = [];

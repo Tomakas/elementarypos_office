@@ -129,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       // 2. Načíst CSV data z assets
-      final String csvRawData = await rootBundle.loadString('assets/m.csv');
+      final String csvRawData = await rootBundle.loadString('lib/assets/m.csv');
 
       // 3. Zpracovat CSV data
       final importResult = await csvImportService.processCsvData(csvRawData, productProvider);

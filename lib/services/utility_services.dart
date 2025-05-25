@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart'; // Import pro Locale a WidgetsBinding
 import 'dart:convert';
 import 'package:intl/intl.dart';
-// Důležité pro NumberFormat
 import '../models/dashboard_widget_model.dart'; // Import DashboardWidgetModel
 
 class StorageService {
@@ -125,28 +124,39 @@ class StorageService {
 }
 
 class Utility {
-  /// Metoda pro normální (plain) čísla bez měny.
   static String formatNumber(num value, {int decimals = 2, String? locale}) {
     final usedLocale = locale ?? 'cs_CZ';
     final format = NumberFormat('#,##0.##', usedLocale);
-    // eg. NumberFormat('###,###.00', usedLocale)
     return format.format(value);
   }
 
-  /// Metoda pro formátování hodnoty v měně.
-  static String formatCurrency(num value,
-      {String? currencySymbol, String? locale, int decimals = 2}) {
-    final usedLocale = locale ??
-        'cs_CZ';
-    final format = NumberFormat.currency(
-      locale: usedLocale,
-      symbol: currencySymbol ?? 'Kč',
-      decimalDigits: decimals,
-    );
+  static String formatCurrency(num value, {
+    String? currencySymbol,
+    String? locale,
+    int decimals = 2,
+    bool trimZeroDecimals = false // Nový parametr
+  }) {
+    final usedLocale = locale ?? 'cs_CZ'; // Nebo lépe AppLocalizations.of(context).locale.toString() pokud máte context
+    NumberFormat format;
+
+    bool isWholeNumber = value is int || (value is double && value == value.truncateToDouble());
+
+    if (trimZeroDecimals && isWholeNumber) {
+      format = NumberFormat.currency(
+        locale: usedLocale,
+        symbol: currencySymbol ?? 'Kč', // Použijte widget.localizations.translate('currency') pro dynamický symbol
+        decimalDigits: 0, // Nezobrazovat desetinná místa pro celá čísla
+      );
+    } else {
+      format = NumberFormat.currency(
+        locale: usedLocale,
+        symbol: currencySymbol ?? 'Kč',
+        decimalDigits: decimals, // Standardní počet desetinných míst
+      );
+    }
     return format.format(value);
   }
 
-  /// Normalizace textu odstraněním diakritiky
   static String normalizeString(String input) {
     const withDiacritics = 'áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ';
     const withoutDiacritics = 'acdeeinorstuuyzACDEEINORSTUUYZ';
@@ -156,7 +166,6 @@ class Utility {
     }).join();
   }
 }
-
 class LocalizationService {
   /// Načte aktuální jazyk z `SharedPreferences` nebo vrátí systémový výchozí jazyk.
   static Future<Locale> getLocale() async {

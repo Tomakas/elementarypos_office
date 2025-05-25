@@ -36,7 +36,7 @@ class CsvImportService {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
 
-      final columns = line.split('\t');
+      final columns = line.split(';');
 
       if (columns.length < 5) {
         print('Přeskakuji řádek CSV (nedostatek sloupců): $line');

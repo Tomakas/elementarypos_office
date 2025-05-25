@@ -2,7 +2,7 @@
 
 class UIPurchaseItem {
   String id;
-  String productId; // Nové pole pro ID produktu
+  String productId; // <<== PŘIDÁNO POLE + POVINNÉ
   String productName;
   double quantity;
   double? unitPrice;
@@ -10,7 +10,7 @@ class UIPurchaseItem {
 
   UIPurchaseItem({
     required this.id,
-    required this.productId, // Přidáno do konstruktoru
+    required this.productId, // <<== PŘIDÁNO DO KONSTRUKTORU JAKO POVINNÉ
     this.productName = '',
     this.quantity = 1.0,
     this.unitPrice,
@@ -25,18 +25,17 @@ class UIPurchaseItem {
     }
     if (unitPrice != null) {
       totalItemPrice = quantity * unitPrice!;
-    } else if (totalItemPrice != null && quantity > 0) { // Přidána kontrola quantity > 0
+    } else if (totalItemPrice != null && quantity > 0) {
       unitPrice = totalItemPrice! / quantity;
     } else if (totalItemPrice != null && quantity == 0) {
       unitPrice = 0;
     }
   }
 
-  // Metoda pro převod instance na JSON mapu
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'productId': productId, // Přidáno do JSON serializace
+      'productId': productId, // <<== PŘIDÁNO DO JSON SERIALIZACE
       'productName': productName,
       'quantity': quantity,
       'unitPrice': unitPrice,
@@ -44,11 +43,10 @@ class UIPurchaseItem {
     };
   }
 
-  // Factory konstruktor pro vytvoření instance z JSON mapy
   factory UIPurchaseItem.fromJson(Map<String, dynamic> json) {
     return UIPurchaseItem(
       id: json['id'] as String,
-      productId: json['productId'] as String, // Přidáno do JSON deserializace
+      productId: json['productId'] as String, // <<== PŘIDÁNO Z JSON DESERIALIZACE
       productName: json['productName'] as String,
       quantity: (json['quantity'] as num).toDouble(),
       unitPrice: (json['unitPrice'] as num?)?.toDouble(),

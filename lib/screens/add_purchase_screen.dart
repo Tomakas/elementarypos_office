@@ -6,12 +6,18 @@ import 'package:uuid/uuid.dart';
 import '../l10n/app_localizations.dart';
 import '../models/ui_purchase_item_model.dart';
 import '../models/purchase_model.dart';
+import '../providers/product_provider.dart'; // Potřebné pro přístup k produktům (pro productId)
 import '../providers/purchase_provider.dart';
 import '../widgets/purchase_item_dialog.dart';
 import '../services/utility_services.dart';
 
 class AddPurchaseScreen extends StatefulWidget {
-  const AddPurchaseScreen({super.key});
+  final Purchase? purchaseToEdit; // <<== PŘIDÁNO: Nákup k editaci
+
+  const AddPurchaseScreen({
+    super.key,
+    this.purchaseToEdit, // <<== PŘIDÁNO: Volitelný parametr
+  });
 
   @override
   State<AddPurchaseScreen> createState() => _AddPurchaseScreenState();
@@ -29,7 +35,34 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
 
   final List<String> _mockSuppliers = ['Dodavatel A', 'Dodavatel B', 'Velkoobchod C'];
   double _overallTotalPrice = 0.0;
-  bool _shouldUpdateStoredPurchasePrice = true; // Přidáno pro přepínač
+  bool _shouldUpdateStoredPurchasePrice = true;
+  bool _isEditing = false; // Příznak, zda editujeme existující nákup
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.purchaseToEdit != null) {
+      _isEditing = true;
+      final purchase = widget.purchaseToEdit!;
+      _selectedSupplier = purchase.supplier;
+      _selectedDate = purchase.purchaseDate;
+      _purchaseNumberController.text = purchase.purchaseNumber ?? '';
+      _notesController.text = purchase.notes ?? '';
+      // Důležité: UIPurchaseItem nyní vyžaduje productId, musíme ho mít v datech nákupu
+      // Pokud purchase.items již obsahuje UIPurchaseItem s vyplněným productId, je to v pořádku
+      // Jinak by bylo potřeba productId doplnit (např. z ProductProvideru na základě productName)
+      // Prozatím předpokládáme, že purchase.items jsou již správně strukturované.
+      _purchaseItems.addAll(purchase.items.map((item) => UIPurchaseItem(
+        id: item.id, // Nebo Uuid().v4() pokud chceme nové ID pro kopii položky
+        productId: item.productId, // Předpokládáme, že toto pole již existuje v UIPurchaseItem
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalItemPrice: item.totalItemPrice,
+      )).toList());
+      _calculateOverallTotal();
+    }
+  }
 
   @override
   void dispose() {
@@ -68,15 +101,19 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
 
   void _handleAddNewItem() async {
     final localizations = AppLocalizations.of(context)!;
+    // Pro získání productProvider pro případné vyhledání produktu a productId
+    // final productProvider = Provider.of<ProductProvider>(context, listen: false);
+
     final newItem = await showPurchaseItemDialog(
       context: context,
       localizations: localizations,
-      // existingItem zde není, takže dialog vytvoří nový UIPurchaseItem s prázdným productId
+      // existingItem zde není, dialog bude zodpovědný za vytvoření UIPurchaseItem včetně productId
     );
+
     if (newItem != null) {
-      // Zde by měla proběhnout kontrola ceny oproti ProductProvider
-      // Prozatím jen přidáme, kontrolu ceny přidáme v dalším kroku
       if (mounted) {
+        // TODO: Zde by mohla být logika pro porovnání cen, pokud je newItem.productId známé
+        // a máme přístup k ProductProvider a uloženým cenám. Prozatím přidáme.
         setState(() {
           _purchaseItems.add(newItem);
           _calculateOverallTotal();
@@ -87,15 +124,13 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
 
   void _handleEditItem(UIPurchaseItem itemToEdit, int index) async {
     final localizations = AppLocalizations.of(context)!;
-    // Úprava zde: Doplnění productId
     final UIPurchaseItem itemCopy = UIPurchaseItem(
         id: itemToEdit.id,
-        productId: itemToEdit.productId, // Doplněno
+        productId: itemToEdit.productId, // Důležité předat productId
         productName: itemToEdit.productName,
         quantity: itemToEdit.quantity,
         unitPrice: itemToEdit.unitPrice,
-        totalItemPrice: itemToEdit.totalItemPrice
-    );
+        totalItemPrice: itemToEdit.totalItemPrice);
 
     final updatedItem = await showPurchaseItemDialog(
       context: context,
@@ -104,9 +139,8 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
     );
 
     if (updatedItem != null) {
-      // Zde by měla proběhnout kontrola ceny oproti ProductProvider
-      // Prozatím jen upravíme, kontrolu ceny přidáme v dalším kroku
       if (mounted) {
+        // TODO: Logika pro porovnání cen i zde
         setState(() {
           _purchaseItems[index] = updatedItem;
           _calculateOverallTotal();
@@ -124,9 +158,11 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
     }
   }
 
-
-  void _savePurchase() {
+  void _savePurchase() async { // Přidáno async
     final localizations = AppLocalizations.of(context)!;
+    final purchaseProvider = Provider.of<PurchaseProvider>(context, listen: false);
+    final productProvider = Provider.of<ProductProvider>(context, listen: false); // Pro aktualizaci NC
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -159,28 +195,46 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
       }
     }
 
-    final newPurchase = Purchase(
-      id: _uuid.v4(),
+    final purchaseToSave = Purchase(
+      id: _isEditing ? widget.purchaseToEdit!.id : _uuid.v4(),
       supplier: _selectedSupplier,
       purchaseDate: _selectedDate,
       purchaseNumber: _purchaseNumberController.text,
       notes: _notesController.text,
-      items: List<UIPurchaseItem>.from(_purchaseItems), // Důležité vytvořit kopii seznamu
+      items: List<UIPurchaseItem>.from(_purchaseItems),
       overallTotalPrice: _overallTotalPrice,
     );
 
-    // Logika pro uložení referenčních NC bude přidána později, až budeme mít ProductProvider
-    Provider.of<PurchaseProvider>(context, listen: false).addPurchase(newPurchase).then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.translate('purchaseSavedSuccessfully'))),
-      );
-      Navigator.of(context).pop();
-    }).catchError((error) {
-      print("Chyba při ukládání nákupu přes providera: $error");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.translate('errorSavingPurchase'))),
-      );
-    });
+    try {
+      if (_isEditing) {
+        await purchaseProvider.updatePurchase(purchaseToSave);
+      } else {
+        await purchaseProvider.addPurchase(purchaseToSave);
+      }
+
+      // Aktualizace uložených nákupních cen produktů, pokud je přepínač aktivní
+      if (_shouldUpdateStoredPurchasePrice) {
+        for (var item in purchaseToSave.items) {
+          if (item.unitPrice != null) { // Aktualizujeme jen pokud je cena zadána
+            await productProvider.updateStoredProductPurchasePrice(item.productId, item.unitPrice);
+          }
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(localizations.translate(_isEditing ? 'purchaseUpdatedSuccessfully' : 'purchaseSavedSuccessfully'))), // Přidat lokalizaci pro 'purchaseUpdatedSuccessfully'
+        );
+        Navigator.of(context).pop(); // Vrátí se na předchozí obrazovku
+      }
+    } catch (error) {
+      print("Chyba při ukládání/aktualizaci nákupu: $error");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(localizations.translate('errorSavingPurchase'))),
+        );
+      }
+    }
   }
 
   Widget _buildItemsTableHeader(AppLocalizations localizations) {
@@ -218,7 +272,6 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
     if (item.totalItemPrice != null && item.quantity > 0 && item.unitPrice == null) {
       item.calculatePrices();
     }
-
     return InkWell(
       onTap: () => _handleEditItem(item, index),
       child: Container(
@@ -261,10 +314,14 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final appBarTitle = _isEditing
+        ? localizations.translate('editPurchaseTitle') // Přidat do lokalizace
+        : localizations.translate('newPurchaseTitle');
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          localizations.translate('newPurchaseTitle'),
+          appBarTitle,
           style: const TextStyle(color: Colors.white, fontSize: 20.0),
         ),
         backgroundColor: Colors.grey[850],
@@ -272,7 +329,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            tooltip: localizations.translate('savePurchase'),
+            tooltip: localizations.translate(_isEditing ? 'saveChanges' : 'savePurchase'),
             onPressed: _savePurchase,
           )
         ],
@@ -320,7 +377,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
               ),
               const SizedBox(height: 16),
 
-              Text(localizations.translate('purchaseNumberOptional'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // Název upraven
+              Text(localizations.translate('purchaseNumberOptional'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               TextFormField(
                 controller: _purchaseNumberController,
                 decoration: InputDecoration(
@@ -330,21 +387,20 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
                   fillColor: Colors.white,
                 ),
               ),
-              const SizedBox(height: 20),
-              // Přepínač pro aktualizaci NC
+              const SizedBox(height: 12), // Snížena mezera
+
               SwitchListTile(
-                title: Text(localizations.translate('updateProductPurchasePriceSwitch')), // Přidat do lokalizace
+                title: Text(localizations.translate('updateProductPurchasePriceSwitch')),
                 value: _shouldUpdateStoredPurchasePrice,
                 onChanged: (bool value) {
                   setState(() {
                     _shouldUpdateStoredPurchasePrice = value;
                   });
                 },
-                activeColor: Theme.of(context).primaryColor, // Nebo jiná barva
-                contentPadding: EdgeInsets.zero, // Odebere výchozí padding
+                activeColor: Theme.of(context).colorScheme.secondary, // Použijeme barvu z theme
+                contentPadding: EdgeInsets.zero,
               ),
-              const SizedBox(height: 8),
-
+              const SizedBox(height: 12), // Zvětšena mezera
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -381,7 +437,6 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
               if (_purchaseItems.isNotEmpty)
                 const Divider(),
 
-
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
@@ -392,7 +447,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
               ),
               const SizedBox(height: 16),
 
-              Text(localizations.translate('notesOptional'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // Název upraven
+              Text(localizations.translate('notesOptional'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               TextFormField(
                 controller: _notesController,
                 decoration: InputDecoration(
@@ -410,7 +465,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.save),
-                  label: Text(localizations.translate('savePurchase'), style: const TextStyle(fontSize: 16)),
+                  label: Text(localizations.translate(_isEditing ? 'saveChanges' : 'savePurchase'), style: const TextStyle(fontSize: 16)),
                   onPressed: _savePurchase,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),

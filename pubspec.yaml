@@ -33,4 +33,4 @@ flutter:
 
   assets:
     - lib/l10n/
-    - assets/m.csv
+    - lib/assets/m.csv

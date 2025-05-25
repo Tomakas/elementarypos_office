@@ -275,6 +275,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'customersScreenFAB',
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(localizations.translate('addNewCustomer'))),

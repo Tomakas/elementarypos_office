@@ -451,6 +451,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'productListScreenFAB',
         onPressed: () async {
           if (productProvider.categories.isEmpty) {
             await productProvider.fetchCategories();

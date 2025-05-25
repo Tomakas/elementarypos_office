@@ -2,6 +2,7 @@
 
 class UIPurchaseItem {
   String id;
+  String productId; // Nové pole pro ID produktu
   String productName;
   double quantity;
   double? unitPrice;
@@ -9,6 +10,7 @@ class UIPurchaseItem {
 
   UIPurchaseItem({
     required this.id,
+    required this.productId, // Přidáno do konstruktoru
     this.productName = '',
     this.quantity = 1.0,
     this.unitPrice,
@@ -26,7 +28,7 @@ class UIPurchaseItem {
     } else if (totalItemPrice != null && quantity > 0) { // Přidána kontrola quantity > 0
       unitPrice = totalItemPrice! / quantity;
     } else if (totalItemPrice != null && quantity == 0) {
-      unitPrice = 0; // Nebo null, podle logiky
+      unitPrice = 0;
     }
   }
 
@@ -34,6 +36,7 @@ class UIPurchaseItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'productId': productId, // Přidáno do JSON serializace
       'productName': productName,
       'quantity': quantity,
       'unitPrice': unitPrice,
@@ -45,6 +48,7 @@ class UIPurchaseItem {
   factory UIPurchaseItem.fromJson(Map<String, dynamic> json) {
     return UIPurchaseItem(
       id: json['id'] as String,
+      productId: json['productId'] as String, // Přidáno do JSON deserializace
       productName: json['productName'] as String,
       quantity: (json['quantity'] as num).toDouble(),
       unitPrice: (json['unitPrice'] as num?)?.toDouble(),

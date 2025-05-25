@@ -3,7 +3,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart'; // Import pro Locale a WidgetsBinding
 import 'dart:convert';
-import 'package:intl/intl.dart'; // Důležité pro NumberFormat
+import 'package:intl/intl.dart';
+// Důležité pro NumberFormat
 import '../models/dashboard_widget_model.dart'; // Import DashboardWidgetModel
 
 class StorageService {
@@ -11,6 +12,7 @@ class StorageService {
   static const String _apiKeyKey = 'api_key';
   static const String _languageCodeKey = 'language_code';
   static const String _dashboardWidgetsKey = 'dashboard_widgets_order';
+  static const String _productPurchasePricesKey = 'product_purchase_prices'; // Nový klíč
 
   /// Uloží API klíč do `SharedPreferences`.
   static Future<void> saveApiKey(String apiKey) async {
@@ -68,7 +70,7 @@ class StorageService {
     }
     final List<dynamic> jsonList = json.decode(jsonString);
     final widgets =
-        jsonList.map((json) => DashboardWidgetModel.fromJson(json)).toList();
+    jsonList.map((json) => DashboardWidgetModel.fromJson(json)).toList();
     print('Loaded widgets: $widgets');
     return widgets;
   }
@@ -78,6 +80,47 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_dashboardWidgetsKey);
     print('Widgets on dashboard were deleted.');
+  }
+
+  // --- Nové metody pro nákupní ceny produktů ---
+
+  /// Uloží mapu nákupních cen produktů do `SharedPreferences`.
+  /// Mapa má formát { productId: purchasePrice }.
+  /// Hodnoty `null` pro cenu znamenají, že cena není explicitně nastavena.
+  static Future<void> saveProductPurchasePrices(Map<String, double?> prices) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Převod mapy na formát ukládatelný do JSON (double? se přímo nepodporuje, ale null hodnoty ano)
+    final Map<String, dynamic> storableMap = prices.map((key, value) => MapEntry(key, value));
+    final String jsonString = json.encode(storableMap);
+    await prefs.setString(_productPurchasePricesKey, jsonString);
+    print('Product purchase prices saved: $jsonString');
+  }
+
+  /// Načte mapu nákupních cen produktů z `SharedPreferences`.
+  /// Vrátí mapu { productId: purchasePrice }.
+  static Future<Map<String, double?>> loadProductPurchasePrices() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? jsonString = prefs.getString(_productPurchasePricesKey);
+    if (jsonString == null || jsonString.isEmpty) {
+      print('No product purchase prices found in SharedPreferences.');
+      return {};
+    }
+    try {
+      final Map<String, dynamic> decodedMap = json.decode(jsonString);
+      // Převod zpět na Map<String, double?>
+      final Map<String, double?> prices = decodedMap.map((key, value) {
+        if (value == null) {
+          return MapEntry(key, null);
+        }
+        // Ošetření pro případ, že by hodnota nebyla num (i když by měla být)
+        return MapEntry(key, (value as num).toDouble());
+      });
+      print('Product purchase prices loaded: $prices');
+      return prices;
+    } catch (e) {
+      print('Error decoding product purchase prices: $e. Returning empty map.');
+      return {};
+    }
   }
 }
 
@@ -93,7 +136,8 @@ class Utility {
   /// Metoda pro formátování hodnoty v měně.
   static String formatCurrency(num value,
       {String? currencySymbol, String? locale, int decimals = 2}) {
-    final usedLocale = locale ?? 'cs_CZ';
+    final usedLocale = locale ??
+        'cs_CZ';
     final format = NumberFormat.currency(
       locale: usedLocale,
       symbol: currencySymbol ?? 'Kč',
@@ -118,7 +162,7 @@ class LocalizationService {
   static Future<Locale> getLocale() async {
     final languageCode = await StorageService.getLanguageCode();
     return Locale(
-        languageCode ?? WidgetsBinding.instance.window.locale.languageCode);
+        languageCode ?? WidgetsBinding.instance.platformDispatcher.locale.languageCode); // Použijeme platformDispatcher
   }
 
   /// Uloží jazykový kód do `SharedPreferences`.

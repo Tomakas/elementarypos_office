@@ -37,6 +37,13 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   bool showOther = true;
   bool showWithDiscount = false;
 
+  // Definice barev pro typy plateb
+  static const Color _cashColor = Color(0xFFFFF9C4); // Jemně žlutá (Colors.yellow[100])
+  static const Color _cardColor = Color(0xFFE3F2FD); // Jemně zelená (Colors.green[100])
+  static const Color _bankColor = Color(0xFFC8E6C9); // Jemně modrá (Colors.blue[50])
+  static const Color _otherColor = Color(0xFFF5F5F5); // Jemně šedá (Colors.grey[100])
+
+
   @override
   void initState() {
     super.initState();
@@ -46,14 +53,10 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
       final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-      // Při první inicializaci nastavíme defaultní rozsah na dnešek v provideru
       if (receiptProvider.dateRange == null) {
         receiptProvider.updateDateRange(DateTimeRange(start: todayStart, end: todayEnd));
       }
-      // A aktualizujeme text zobrazený na obrazovce
       _updateDateRangeText(receiptProvider);
-
-      // Načteme účtenky s aktuálně nastaveným filtrem v provideru (nebo s výchozím, pokud žádný není)
       _fetchReceipts();
     });
   }
@@ -77,7 +80,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     }
   }
 
-  static String _formatPaymentLine(
+  // Upraveno pro vrácení pouze textu platby a částky, zarovnání bude řešeno ve widgetu
+  static String _getPaymentInfo(
       AppLocalizations localizations, String paymentType, double total) {
     String paymentText;
     switch (paymentType) {
@@ -96,7 +100,22 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         break;
     }
     String currencySymbol = localizations.translate('currency');
+    // Vrátíme jen samotný text, formátování částky zůstává
     return '$paymentText: ${Utility.formatCurrency(total, currencySymbol: currencySymbol.isNotEmpty ? currencySymbol : null)}';
+  }
+
+  Color _getPaymentColor(String paymentType) {
+    switch (paymentType) {
+      case 'CASH':
+        return _cashColor;
+      case 'CARD':
+        return _cardColor;
+      case 'BANK':
+        return _bankColor;
+      case 'OTHER':
+      default:
+        return _otherColor;
+    }
   }
 
   Future<void> _fetchReceipts() async {
@@ -110,9 +129,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         showOther: showOther,
         showWithDiscount: showWithDiscount,
       );
-      print('Filtered Receipts (from provider): ${receiptProvider.receipts.length}');
     } catch (e) {
-      print('Error while getting Receipts: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(AppLocalizations.of(context)!.translate('errorFetchingReceipts')))
@@ -279,7 +296,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     );
   }
 
-  // PŘIDANÁ METODA PRO ZOBRAZENÍ DIALOGU SOUHRNU
   void _showItemsSummaryDialog() {
     final localizations = AppLocalizations.of(context)!;
     final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
@@ -299,10 +315,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         for (var item in (receipt['items'] as List)) {
           String itemName = item['text'] as String? ?? localizations.translate('unknownItem');
           double itemQuantity = (item['quantity'] as num?)?.toDouble() ?? 0.0;
-
-          // Použijeme 'priceToPay' pokud existuje, jinak 'itemPrice' * 'quantity'
-          // 'itemPrice' je zde bráno jako jednotková cena PŘED případnými slevami na položce.
-          // 'priceToPay' by měla být finální cena za daný počet kusů na řádku účtenky.
           double lineItemTotalPrice;
           if (item['priceToPay'] != null) {
             lineItemTotalPrice = (item['priceToPay'] as num).toDouble();
@@ -310,11 +322,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             double singleUnitPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0;
             lineItemTotalPrice = singleUnitPrice * itemQuantity;
           }
-
-          itemsSummary.putIfAbsent(
-            itemName,
-                () => ItemSummary(name: itemName),
-          ).add(itemQuantity, lineItemTotalPrice);
+          itemsSummary.putIfAbsent(itemName, () => ItemSummary(name: itemName))
+              .add(itemQuantity, lineItemTotalPrice);
         }
       }
     }
@@ -328,7 +337,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(localizations.translate('itemSummaryDialogTitle')),
-          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0), // Odsazení jako ve vašem kódu
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -340,16 +349,13 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 ))]
                     : sortedItems.map((item) {
                   String trimmedName = item.name.length > 25 ? '${item.name.substring(0, 25)}...' : item.name;
-
                   String formattedQuantity;
                   if (item.quantity == item.quantity.truncateToDouble()) {
                     formattedQuantity = item.quantity.toInt().toString();
                   } else {
                     formattedQuantity = NumberFormat("0.##", localizations.locale.languageCode).format(item.quantity);
                   }
-
                   String currencySymbol = localizations.translate('currency');
-
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 3.0),
                     child: Row(
@@ -358,13 +364,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                         Expanded(
                           child: Text(
                             "$formattedQuantity x $trimmedName",
-                            style: const TextStyle(color: Colors.black, fontSize: 14), // Původní styl
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
                           ),
                         ),
                         Text(
-                          // Formátování ceny jako ve vašem původním kódu
                           "${item.totalPrice.toStringAsFixed(2)} ${currencySymbol.isNotEmpty ? currencySymbol : ''}",
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14), // Původní styl
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ],
                     ),
@@ -375,14 +380,14 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              style: TextButton.styleFrom( // Styl tlačítka podle vašeho původního kódu
+              style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.grey[850],
               ),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: Text(localizations.translate('close')), // Použijeme existující klíč "close" pokud ho máte
+              child: Text(localizations.translate('close')),
             ),
           ],
         );
@@ -390,21 +395,19 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
-        title:
-        Text(localizations.translate('salesTitle'), style: const TextStyle(color: Colors.white)),
+        title: Text(localizations.translate('salesTitle'), style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.grey[850],
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.functions, color: Colors.white),
             tooltip: localizations.translate('itemSummaryTooltip'),
-            onPressed: _showItemsSummaryDialog, // AKTUALIZOVANÁ AKCE
+            onPressed: _showItemsSummaryDialog,
           ),
           IconButton(
             icon: const Icon(Icons.date_range, color: Colors.white),
@@ -507,7 +510,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                           String formattedDateTime =
                               '${localizations.translate('date')}: ${DateFormat('dd.MM.yyyy').format(dateTime)} '
                               '${localizations.translate('time')}: ${DateFormat('HH:mm').format(dateTime)}';
+
+                          // Získání barvy pozadí podle typu platby
+                          Color cardColor = _getPaymentColor(receipt['paymentType']);
+
                           return Card(
+                            color: cardColor, // Nastavení barvy pozadí karty
                             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             child: ListTile(
                               title: Text(
@@ -520,16 +528,14 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                   if (receipt['items'] != null && receipt['items'] is List)
                                     ...receipt['items'].map<Widget>((item) {
                                       final quantity = (item['quantity'] as num?)?.toDouble() ?? 0.0;
-                                      final itemPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0; // Jednotková cena
+                                      final itemPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0;
                                       final isNegative = quantity < 0 || itemPrice < 0;
-
                                       String formattedQuantity;
                                       if (quantity == quantity.truncateToDouble()) {
                                         formattedQuantity = quantity.toInt().toString();
                                       } else {
                                         formattedQuantity = NumberFormat("0.##", localizations.locale.languageCode).format(quantity);
                                       }
-
                                       return Text(
                                         '$formattedQuantity x ${item['text']}: ${Utility.formatCurrency(itemPrice, currencySymbol: localizations.translate('currency'))}',
                                         style: TextStyle(
@@ -539,16 +545,20 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                       );
                                     }).toList(),
                                   const SizedBox(height: 10),
-                                  Text(
-                                    _formatPaymentLine(
-                                      localizations,
-                                      receipt['paymentType'],
-                                      (receipt['total'] as num?)?.toDouble() ?? 0.0,
-                                    ).toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                  // Zarovnání textu typu platby doprava
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      _getPaymentInfo( // Použijeme upravenou metodu
+                                        localizations,
+                                        receipt['paymentType'],
+                                        (receipt['total'] as num?)?.toDouble() ?? 0.0,
+                                      ).toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],

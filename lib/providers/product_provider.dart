@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
-import '../services/utility_services.dart'; // Import StorageService
+import '../services/utility_services.dart';
+// Import StorageService
 
 class ProductProvider extends ChangeNotifier {
   List<Product> products = [];
@@ -24,36 +25,11 @@ class ProductProvider extends ChangeNotifier {
   /// Načtení lokálně uložených nákupních cen produktů
   Future<void> _loadStoredProductPurchasePrices() async {
     _productStoredPurchasePrices = await StorageService.loadProductPurchasePrices();
-    // Po načtení můžeme aktualizovat pole `purchasePrice` v našem seznamu `products`
-    // pokud už jsou produkty načtené.
-    if (products.isNotEmpty) {
-      for (var i = 0; i < products.length; i++) {
-        final productId = products[i].itemId;
-        if (_productStoredPurchasePrices.containsKey(productId)) {
-          // Vytvoříme novou instanci produktu s aktualizovanou cenou,
-          // abychom správně notifikovali listenery, pokud se spoléhají na immutabilitu.
-          // Nicméně, Product model je mutable, takže přímá změna je také možná.
-          // Pro jednoduchost a konzistenci s `updateProductPurchasePrice` můžeme vytvořit novou instanci.
-          final currentProduct = products[i];
-          products[i] = Product(
-            itemId: currentProduct.itemId,
-            code: currentProduct.code,
-            itemName: currentProduct.itemName,
-            taxId: currentProduct.taxId,
-            sellingPrice: currentProduct.sellingPrice,
-            purchasePrice: _productStoredPurchasePrices[productId], // Zde nastavujeme načtenou cenu
-            currency: currentProduct.currency,
-            color: currentProduct.color,
-            sku: currentProduct.sku,
-            categoryId: currentProduct.categoryId,
-            categoryName: currentProduct.categoryName,
-            note: currentProduct.note,
-            onSale: currentProduct.onSale,
-          );
-        }
-      }
-    }
-    // notifyListeners(); // Není potřeba zde volat, pokud je to součást větší operace jako fetchAllProductData
+    // Není potřeba zde volat notifyListeners(), pokud je to součást větší operace
+    // jako fetchAllProductData, která zavolá notifyListeners() na konci.
+    // Cyklus pro aktualizaci produktů byl odstraněn, protože produkty
+    // budou aktuálně načteny z API a poté sloučeny v _mergeProductsWithStoredPurchasePrices.
+    print('Loaded stored product purchase prices: ${_productStoredPurchasePrices.length} items.');
   }
 
   /// Uložení aktuální mapy nákupních cen produktů
@@ -64,7 +40,6 @@ class ProductProvider extends ChangeNotifier {
   /// Aktualizace a uložení nákupní ceny pro konkrétní produkt
   Future<void> updateStoredProductPurchasePrice(String productId, double? newPrice) async {
     _productStoredPurchasePrices[productId] = newPrice;
-
     // Najdeme produkt v seznamu `products` a aktualizujeme jeho `purchasePrice`
     final productIndex = products.indexWhere((p) => p.itemId == productId);
     if (productIndex != -1) {
@@ -179,7 +154,8 @@ class ProductProvider extends ChangeNotifier {
         // Pokud bychom chtěli okamžitě uložit NC pro nově přidaný produkt, museli bychom získat jeho ID z API.
         // Jednodušší je, že NC se uloží při prvním nákupu tohoto produktu.
         // Alternativně, pokud by addProduct vracelo ID:
-        // String newProductId = await ApiService.addProduct(product); // Předpoklad, že vrací ID
+        // String newProductId = await ApiService.addProduct(product);
+        // Předpoklad, že vrací ID
         // await updateStoredProductPurchasePrice(newProductId, product.purchasePrice);
       }
       // notifyListeners(); // fetchProducts() již volá notifyListeners()

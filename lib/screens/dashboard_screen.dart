@@ -1,11 +1,15 @@
 // lib/screens/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/dashboard_widget_model.dart';
 import '../services/utility_services.dart';
 import 'package:uuid/uuid.dart';
 import '../widgets/dashboard_widgets.dart';
+import '../providers/receipt_provider.dart';
+import '../providers/product_provider.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,15 +25,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadWidgetsList();
+    _loadWidgetsList().then((_) {
+      if (mounted) {
+        _loadDashboardDataStrategically();
+      }
+    });
   }
 
   Future<void> _loadWidgetsList() async {
-    // Načtení pořadí widgetů z persistentního úložiště
     List<DashboardWidgetModel> loaded =
-        await StorageService.getDashboardWidgetsOrder();
-
-    // Pokud není žádné uložené pořadí, nastavíme výchozí pořadí
+    await StorageService.getDashboardWidgetsOrder();
     if (loaded.isEmpty) {
       loaded = [
         DashboardWidgetModel(id: const Uuid().v4(), type: 'summary'),
@@ -41,10 +46,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
       await StorageService.saveDashboardWidgetsOrder(loaded);
     }
-    setState(() {
-      widgetsList = loaded;
-      print('Loaded widgets: $widgetsList');
-    });
+    if (mounted) {
+      setState(() {
+        widgetsList = loaded;
+        print('Loaded widgets: ${widgetsList.length}');
+      });
+    }
+  }
+
+  Future<void> _loadDashboardDataStrategically() async {
+    if (!mounted || widgetsList.isEmpty) {
+      print("Dashboard: No widgets configured or screen not mounted, skipping strategic data load.");
+      return;
+    }
+    print("Dashboard: Starting strategic data load based on active widgets.");
+
+    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+
+    bool needsReceipts = false;
+    bool needsProductsAndCategories = false;
+
+    for (var widgetModel in widgetsList) {
+      switch (widgetModel.type) {
+        case 'summary':
+        case 'top_products':
+        case 'hourly_graph':
+        case 'payment_pie_chart':
+        case 'today_revenue':
+          needsReceipts = true;
+          break;
+        case 'top_categories':
+          needsReceipts = true;
+          needsProductsAndCategories = true;
+          break;
+      }
+    }
+
+    List<Future> futures = [];
+
+    if (needsReceipts) {
+      print("Dashboard: Receipts data needed. Initiating fetch...");
+      final now = DateTime.now();
+      final todayRange = DateTimeRange(
+        start: DateTime(now.year, now.month, now.day),
+        end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+      );
+      futures.add(receiptProvider.fetchReceipts(dateRange: todayRange));
+    }
+
+    if (needsProductsAndCategories) {
+      print("Dashboard: Product and category data needed. Initiating fetch...");
+      // Například, pokud productProvider nemá načtené produkty nebo kategorie.
+      // Pro jednoduchost můžeme vždy volat fetchAllProductData, pokud je potřeba.
+      // V reálné aplikaci by zde mohla být sofistikovanější logika pro rozhodnutí, zda je fetch nutný.
+      if (productProvider.products.isEmpty || productProvider.categories.isEmpty) {
+        futures.add(productProvider.fetchAllProductData());
+      }
+    }
+
+    if (futures.isNotEmpty) {
+      try {
+        await Future.wait(futures);
+        print("Dashboard: Strategic data loading operations completed.");
+      } catch (e) {
+        print("Dashboard: Error during strategic data loading: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.translate('errorLoadingDashboardData'))),
+          );
+        }
+      }
+    } else {
+      print("Dashboard: No specific data fetch needed by active widgets.");
+    }
   }
 
   Future<void> _saveWidgetsOrder() async {
@@ -52,15 +127,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _enterEditMode() {
-    setState(() {
-      isEditMode = true;
-    });
+    if (mounted) {
+      setState(() {
+        isEditMode = true;
+      });
+    }
   }
 
   void _exitEditMode() {
-    setState(() {
-      isEditMode = false;
-    });
+    if (mounted) {
+      setState(() {
+        isEditMode = false;
+      });
+    }
   }
 
   void _showAddWidgetDialog(BuildContext context) {
@@ -103,10 +182,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     id: const Uuid().v4(),
                     type: selectedType!,
                   );
-                  setState(() {
-                    widgetsList.add(newWidget);
-                  });
+                  if (mounted) {
+                    setState(() {
+                      widgetsList.add(newWidget);
+                    });
+                  }
                   _saveWidgetsOrder();
+                  _loadDashboardDataStrategically(); // Znovu načteme data, pokud nový widget něco vyžaduje
                   Navigator.pop(context);
                 }
               },
@@ -121,7 +203,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-
     return Scaffold(
       backgroundColor: Colors.grey[400],
       appBar: AppBar(
@@ -153,27 +234,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: Container(
-        color: Colors.grey[400], // Barva pozadí ReorderableListView
+        color: Colors.grey[400],
         child: ReorderableListView(
-          // Vypnout výchozí drag handles, abychom mohli přidat vlastní
           buildDefaultDragHandles: false,
-
-          // Pokud je editovací mód aktivní, použijeme skutečnou metodu pro přeuspořádání
-          // Jinak použijeme metodu, která nepřesune položky
           onReorder: isEditMode ? _handleReorder : _noReorderAllowed,
-
-          // Přidáme proxyDecorator pro přizpůsobení vzhledu přetahovaného widgetu
           proxyDecorator:
               (Widget child, int index, Animation<double> animation) {
+            // Zajistíme, že widgetsList není prázdný a index je platný
+            if (widgetsList.isEmpty || index < 0 || index >= widgetsList.length) {
+              return Material(child: SizedBox.shrink()); // Vrátíme prázdný widget, pokud je problém
+            }
             final model = widgetsList[index];
             return Material(
               elevation: 6.0,
-              color: Colors.white, // Stejná barva jako ostatní widgety
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12.0),
               child: _buildItem(model, isDragging: true),
             );
           },
-
           padding: const EdgeInsets.all(16.0),
           children: [
             for (int index = 0; index < widgetsList.length; index++)
@@ -184,8 +262,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Metoda pro vytvoření widgetu položky
   Widget _buildItem(DashboardWidgetModel model, {bool isDragging = false}) {
+    if (!mounted) return SizedBox.shrink(key: ValueKey("unmounted_placeholder_${model.id}"));
+
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) return SizedBox.shrink(key: ValueKey("no_localizations_placeholder_${model.id}"));
+
     return Column(
       key: ValueKey(model.id),
       mainAxisSize: MainAxisSize.min,
@@ -205,13 +287,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: _buildWidgetByType(model.type),
               ),
-              // V editačním módu zobrazíme drag handle
               if (isEditMode)
                 Positioned(
                   top: 8,
                   left: 8,
                   child: ReorderableDragStartListener(
-                    index: widgetsList.indexOf(model),
+                    index: widgetsList.indexWhere((w) => w.id == model.id), // Bezpečnější nalezení indexu
                     child: const Icon(
                       Icons.drag_indicator,
                       size: 40,
@@ -219,7 +300,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-              // Zobrazení tlačítka pro odstranění widgetu v editačním módu
               if (isEditMode)
                 Positioned(
                   top: 8,
@@ -230,65 +310,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       size: 40,
                       color: Colors.red,
                     ),
-                    tooltip: AppLocalizations.of(context)!.translate('delete'),
+                    tooltip: localizations.translate('delete'),
                     onPressed: () {
-                      setState(() {
-                        widgetsList.removeWhere((w) => w.id == model.id);
-                      });
+                      if (mounted) {
+                        setState(() {
+                          widgetsList.removeWhere((w) => w.id == model.id);
+                        });
+                      }
                       _saveWidgetsOrder();
+                      _loadDashboardDataStrategically();
                     },
                   ),
                 ),
             ],
           ),
         ),
-        // Přidáme mezeru pouze, pokud se widget nepřetahuje
         if (!isDragging) const SizedBox(height: 12.0),
       ],
     );
   }
 
-  /// Metoda pro přeuspořádání widgetů
   void _handleReorder(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final item = widgetsList.removeAt(oldIndex);
-      widgetsList.insert(newIndex, item);
-    });
+    if (mounted) {
+      setState(() {
+        if (newIndex > oldIndex) {
+          newIndex -= 1;
+        }
+        final item = widgetsList.removeAt(oldIndex);
+        widgetsList.insert(newIndex, item);
+      });
+    }
     _saveWidgetsOrder();
   }
 
-  /// Metoda, která neprovádí žádnou změnu pořadí (v ne-edit módu)
   void _noReorderAllowed(int oldIndex, int newIndex) {
-    // Nic neděláme, takže se pořadí nezmění
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
-  /// Metoda pro vytvoření widgetu na základě jeho typu
   Widget _buildWidgetByType(String type) {
     switch (type) {
       case 'summary':
         return const SummaryWidget();
-
       case 'top_products':
         return const TopProductsWidget();
-
       case 'top_categories':
         return const TopCategoriesWidget();
-
       case 'hourly_graph':
         return const HourlyGraphWidget();
-
       case 'payment_pie_chart':
         return const PaymentPieChartWidget();
-
       case 'today_revenue':
         return const TodayRevenueWidget();
-
       default:
-        return const Text('Unknown Widget Type');
+      // Použijeme AppLocalizations.of(context) pro případ, že by buildWidgetByType bylo voláno mimo build metodu _DashboardScreenState
+      // Nicméně, v tomto kontextu je to voláno z _buildItem, kde localizations již máme.
+      // Pro jistotu, pokud by se kontext měnil:
+        final currentContext = context;
+        final localizations = AppLocalizations.of(currentContext);
+        return Text(localizations?.translate('unknownWidgetType') ?? 'Unknown Widget Type');
     }
   }
 }

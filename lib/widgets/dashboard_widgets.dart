@@ -1,3 +1,5 @@
+// lib/widgets/dashboard_widgets.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -7,45 +9,23 @@ import '../l10n/app_localizations.dart';
 import '../services/utility_services.dart';
 
 /// 1) Widget: Počet účtenek (Summary)
-class SummaryWidget extends StatefulWidget {
+class SummaryWidget extends StatelessWidget {
   const SummaryWidget({super.key});
-
-  @override
-  State<SummaryWidget> createState() => _SummaryWidgetState();
-}
-
-class _SummaryWidgetState extends State<SummaryWidget> {
-  bool isLoading = false;
-  int receiptsCount = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-
-    await receiptProvider.fetchReceipts();
-
-    setState(() {
-      receiptsCount = receiptProvider.receipts.length;
-      isLoading = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = context.watch<ReceiptProvider>();
 
-    if (isLoading) {
+    if (receiptProvider.isLoading && receiptProvider.receipts.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(8.0),
+        child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3,))),
       );
     }
+
+    final receiptsCount = receiptProvider.receipts.length;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(6.0),
@@ -75,42 +55,28 @@ class _SummaryWidgetState extends State<SummaryWidget> {
 }
 
 /// 2) Widget: TopProducts (tabulka nejprodávanějších produktů)
-class TopProductsWidget extends StatefulWidget {
+class TopProductsWidget extends StatelessWidget {
   const TopProductsWidget({super.key});
-
-  @override
-  State<TopProductsWidget> createState() => _TopProductsWidgetState();
-}
-
-class _TopProductsWidgetState extends State<TopProductsWidget> {
-  bool isLoading = false;
-  List<Map<String, dynamic>> topProducts = [];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-
-    // Pokud nejsou receipts načteny, tak je můžeme načíst
-    await receiptProvider.fetchReceipts();
-
-    // Získáme top produkty
-    topProducts = receiptProvider.getTopProducts(limit: 5);
-
-    setState(() => isLoading = false);
-  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = context.watch<ReceiptProvider>();
 
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (receiptProvider.isLoading && receiptProvider.receipts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final List<Map<String, dynamic>> topProducts = receiptProvider.getTopProducts(limit: 5);
+
+    if (topProducts.isEmpty && !receiptProvider.isLoading) {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(localizations.translate('noDataForTopProducts'), style: TextStyle(color: Colors.grey[600])),
+      ));
     }
 
     return Container(
@@ -127,7 +93,6 @@ class _TopProductsWidgetState extends State<TopProductsWidget> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12.0),
-          // Záhlaví tabulky
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -157,6 +122,11 @@ class _TopProductsWidgetState extends State<TopProductsWidget> {
             ],
           ),
           const Divider(),
+          if (topProducts.isEmpty && receiptProvider.isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3,)),
+            ),
           for (var product in topProducts)
             Padding(
               padding: const EdgeInsets.all(4.0),
@@ -165,19 +135,19 @@ class _TopProductsWidgetState extends State<TopProductsWidget> {
                 children: [
                   Expanded(
                     flex: 4,
-                    child: Text(product['name']),
+                    child: Text(product['name'] ?? ''),
                   ),
                   Expanded(
                     flex: 2,
                     child: Text(
-                      product['quantity'].toStringAsFixed(0),
+                      (product['quantity'] as num?)?.toStringAsFixed(0) ?? "0",
                       textAlign: TextAlign.center,
                     ),
                   ),
                   Expanded(
                     flex: 3,
                     child: Text(
-                      Utility.formatCurrency(product['revenue']),
+                      Utility.formatCurrency((product['revenue'] as num?)?.toDouble() ?? 0.0),
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -191,48 +161,42 @@ class _TopProductsWidgetState extends State<TopProductsWidget> {
 }
 
 /// 3) Widget: TopCategories (tabulka nejprodávanějších kategorií)
-class TopCategoriesWidget extends StatefulWidget {
+class TopCategoriesWidget extends StatelessWidget {
   const TopCategoriesWidget({super.key});
-
-  @override
-  State<TopCategoriesWidget> createState() => _TopCategoriesWidgetState();
-}
-
-class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
-  bool isLoading = false;
-  List<Map<String, dynamic>> topCategories = [];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-    final productProvider = Provider.of<ProductProvider>(context, listen: false);
-
-    // Načíst receipts
-    await receiptProvider.fetchReceipts();
-    // Načíst products (protože ve getTopCategories je volán productProvider.getProductByName)
-    await productProvider.fetchProducts();
-
-    // Nyní z receiptProvideru vytáhneme top kategorie
-    topCategories = receiptProvider.getTopCategories(
-      limit: 5,
-      productProvider: productProvider,
-    );
-
-    setState(() => isLoading = false);
-  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = context.watch<ReceiptProvider>();
+    final productProvider = context.watch<ProductProvider>();
 
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if ((receiptProvider.isLoading && receiptProvider.receipts.isEmpty) ||
+        (productProvider.isLoading && productProvider.products.isEmpty && productProvider.categories.isEmpty)) { // Upravená podmínka
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Zkontrolujeme, zda productProvider má načtené produkty, než zavoláme getTopCategories
+    if (productProvider.products.isEmpty && !productProvider.isLoading) {
+      return Center(child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(localizations.translate('productsNotLoadedYet'), style: TextStyle(color: Colors.grey[600])) // Přidat do lokalizace
+      ));
+    }
+
+
+    final List<Map<String, dynamic>> topCategories = receiptProvider.getTopCategories(
+      limit: 5,
+      productProvider: productProvider,
+    );
+
+    if (topCategories.isEmpty && !receiptProvider.isLoading && !productProvider.isLoading) {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(localizations.translate('noDataForTopCategories'), style: TextStyle(color: Colors.grey[600])),
+      ));
     }
 
     return Container(
@@ -249,7 +213,6 @@ class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12.0),
-          // Záhlaví
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -279,6 +242,11 @@ class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
             ],
           ),
           const Divider(),
+          if (topCategories.isEmpty && (receiptProvider.isLoading || productProvider.isLoading))
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3,)),
+            ),
           for (var category in topCategories)
             Padding(
               padding: const EdgeInsets.all(4.0),
@@ -287,19 +255,19 @@ class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
                 children: [
                   Expanded(
                     flex: 4,
-                    child: Text(category['name']),
+                    child: Text(category['name'] ?? ''),
                   ),
                   Expanded(
                     flex: 2,
                     child: Text(
-                      category['quantity'].toStringAsFixed(0),
+                      (category['quantity'] as num?)?.toStringAsFixed(0) ?? "0",
                       textAlign: TextAlign.center,
                     ),
                   ),
                   Expanded(
                     flex: 3,
                     child: Text(
-                      Utility.formatCurrency(category['revenue']),
+                      Utility.formatCurrency((category['revenue'] as num?)?.toDouble() ?? 0.0),
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -313,40 +281,27 @@ class _TopCategoriesWidgetState extends State<TopCategoriesWidget> {
 }
 
 /// 4) Widget: Hodinový graf tržeb (Hourly Graph)
-class HourlyGraphWidget extends StatefulWidget {
+class HourlyGraphWidget extends StatelessWidget {
   const HourlyGraphWidget({super.key});
 
   @override
-  State<HourlyGraphWidget> createState() => _HourlyGraphWidgetState();
-}
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = context.watch<ReceiptProvider>();
 
-class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
-  bool isLoading = false;
-  List<double> hourlyRevenue = List.filled(24, 0.0);
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-
-    // Načíst receipts
-    await receiptProvider.fetchReceipts();
-
-    // Naplnit hourlyRevenue
-    final receipts = receiptProvider.receipts;
-    for (int i = 0; i < 24; i++) {
-      hourlyRevenue[i] = 0.0;
+    if (receiptProvider.isLoading && receiptProvider.receipts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
-    for (var receipt in receipts) {
+
+    List<double> hourlyRevenue = List.filled(24, 0.0);
+    for (var receipt in receiptProvider.receipts) {
       if (receipt['dateTime'] != null && receipt['total'] != null) {
         try {
           final date = DateTime.parse(receipt['dateTime']);
-          final revenue = (receipt['total'] as num).toDouble();
+          final revenue = (receipt['total'] as num?)?.toDouble() ?? 0.0;
           if (date.hour >= 0 && date.hour < 24) {
             hourlyRevenue[date.hour] += revenue;
           }
@@ -354,51 +309,45 @@ class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
       }
     }
 
-    setState(() => isLoading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
-    if (isLoading) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(child: CircularProgressIndicator()),
-      );
+    bool hasData = hourlyRevenue.any((value) => value > 0);
+    if (!hasData && !receiptProvider.isLoading) {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(localizations.translate('noDataForHourlyGraph'), style: TextStyle(color: Colors.grey[600])),
+      ));
     }
 
-    // Najít min a max. Určíme range
     int minHour = hourlyRevenue.indexWhere((value) => value > 0);
     int maxHour = hourlyRevenue.lastIndexWhere((value) => value > 0);
     final maxValue = (hourlyRevenue.isNotEmpty)
         ? hourlyRevenue.reduce((a, b) => a > b ? a : b)
         : 0.0;
-
-    // Pokud nenajdeme nic, dáme standard 8..18
     if (minHour == -1) minHour = 8;
     if (maxHour == -1) maxHour = 18;
     if (minHour > maxHour) {
-      // fallback
       minHour = 8;
       maxHour = 18;
     }
 
     final barGroups = <BarChartGroupData>[];
-    for (int hour = minHour; hour <= maxHour; hour++) {
-      barGroups.add(
-        BarChartGroupData(
-          x: hour,
-          barRods: [
-            BarChartRodData(
-              toY: hourlyRevenue[hour],
-              color: Colors.blueAccent,
-              width: 16,
-            ),
-          ],
-        ),
-      );
+    if(hasData){ // Vytváříme skupiny jen pokud máme data
+      for (int hour = minHour; hour <= maxHour; hour++) {
+        barGroups.add(
+          BarChartGroupData(
+            x: hour,
+            barRods: [
+              BarChartRodData(
+                toY: hourlyRevenue[hour],
+                color: Colors.blueAccent,
+                width: 16,
+                borderRadius: BorderRadius.zero, // Ostré hrany pro klasický vzhled
+              ),
+            ],
+          ),
+        );
+      }
     }
+
 
     return Container(
       height: 300,
@@ -409,7 +358,8 @@ class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
       ),
       child: Column(
         children: [
-          Center(
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 16.0), // Větší padding
             child: Text(
               localizations.translate('hourlyGraph'),
               style: const TextStyle(
@@ -417,50 +367,86 @@ class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: BarChart(
-              BarChartData(
-                barGroups: barGroups,
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        if (value == 0 || value == maxValue) {
+          if (!hasData && receiptProvider.isLoading)
+            const Expanded(child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3,)))),
+          if (hasData)
+            Expanded(
+              child: BarChart(
+                BarChartData(
+                  barGroups: barGroups,
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          if (value == 0) return const Text('');
+                          if (maxValue > 0 && (value == maxValue || value % (maxValue / 4).ceilToDouble() == 0)) {
+                            return Text(Utility.formatCurrency(value, decimals: 0, currencySymbol: ''), style: const TextStyle(fontSize: 10));
+                          }
                           return const Text('');
-                        }
-                        return Text(Utility.formatCurrency(value, decimals: 0),
-                            style: const TextStyle(fontSize: 12));
+                        },
+                        reservedSize: 35, // Upraveno
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final hour = value.toInt();
+                          if (hour >= minHour && hour <= maxHour && hour % 2 == 0) {
+                            return Padding(padding: const EdgeInsets.only(top:4.0), child: Text(hour.toString(), style: const TextStyle(fontSize: 10)));
+                          }
+                          return const Text('');
+                        },
+                        reservedSize: 22, // Upraveno
+                      ),
+                    ),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(color: Colors.grey.shade300, strokeWidth: 0.8);
+                    },
+                  ),
+                  borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                        left: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      )
+                  ),
+                  barTouchData: BarTouchData( // Přidáno pro tooltips
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        String hour;
+                        hour = '${group.x.toInt()}:00 - ${(group.x.toInt() + 1)}:00';
+                        return BarTooltipItem(
+                          '$hour\n',
+                          const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                          children: <TextSpan>[
+                            TextSpan(
+                              text: Utility.formatCurrency(rod.toY, decimals:0),
+                              style: const TextStyle(
+                                color: Colors.yellow,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        );
                       },
-                      reservedSize: 40,
                     ),
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final hour = value.toInt();
-                        if (hour >= minHour && hour <= maxHour) {
-                          return Text(hour.toString());
-                        }
-                        return const Text('');
-                      },
-                      reservedSize: 20,
-                    ),
-                  ),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles:
-                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                gridData: FlGridData(show: true, drawVerticalLine: false),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(color: Colors.grey),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -468,128 +454,115 @@ class _HourlyGraphWidgetState extends State<HourlyGraphWidget> {
 }
 
 /// 5) Widget: Payment Pie Chart (koláčový graf tržeb podle typu platby)
-class PaymentPieChartWidget extends StatefulWidget {
+class PaymentPieChartWidget extends StatelessWidget {
   const PaymentPieChartWidget({super.key});
 
   @override
-  State<PaymentPieChartWidget> createState() => _PaymentPieChartWidgetState();
-}
-
-class _PaymentPieChartWidgetState extends State<PaymentPieChartWidget> {
-  bool isLoading = false;
-  final Map<String, double> paymentData = {};
-
-  @override
-  void initState() {
-    super.initState();
-    paymentData.clear();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
+  Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = context.watch<ReceiptProvider>();
 
-    // Načíst receipts
-    await receiptProvider.fetchReceipts();
+    if (receiptProvider.isLoading && receiptProvider.receipts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-    // Payment data
-    paymentData[localizations.translate('cashPaymentType')] = 0.0;
-    paymentData[localizations.translate('cardPaymentType')] = 0.0;
-    paymentData[localizations.translate('bankPaymentType')] = 0.0;
-    paymentData[localizations.translate('otherPaymentType')] = 0.0;
+    final Map<String, double> paymentData = {
+      localizations.translate('cashPaymentType'): 0.0,
+      localizations.translate('cardPaymentType'): 0.0,
+      localizations.translate('bankPaymentType'): 0.0,
+      localizations.translate('otherPaymentType'): 0.0,
+    };
 
     for (var receipt in receiptProvider.receipts) {
       final paymentType = receipt['paymentType'];
       final total = (receipt['total'] as num?)?.toDouble() ?? 0.0;
 
-      if (paymentType == 'CASH') {
-        paymentData[localizations.translate('cashPaymentType')] =
-            (paymentData[localizations.translate('cashPaymentType')] ?? 0.0) +
-                total;
-      } else if (paymentType == 'CARD') {
-        paymentData[localizations.translate('cardPaymentType')] =
-            (paymentData[localizations.translate('cardPaymentType')] ?? 0.0) +
-                total;
-      } else if (paymentType == 'BANK') {
-        paymentData[localizations.translate('bankPaymentType')] =
-            (paymentData[localizations.translate('bankPaymentType')] ?? 0.0) +
-                total;
-      } else {
-        paymentData[localizations.translate('otherPaymentType')] =
-            (paymentData[localizations.translate('otherPaymentType')] ?? 0.0) +
-                total;
+      String key;
+      switch (paymentType) {
+        case 'CASH':
+          key = localizations.translate('cashPaymentType');
+          break;
+        case 'CARD':
+          key = localizations.translate('cardPaymentType');
+          break;
+        case 'BANK':
+          key = localizations.translate('bankPaymentType');
+          break;
+        default:
+          key = localizations.translate('otherPaymentType');
       }
-    }
-
-    setState(() => isLoading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      paymentData[key] = (paymentData[key] ?? 0.0) + total;
     }
 
     final totalRevenue = paymentData.values.fold(0.0, (sum, val) => sum + val);
+    bool hasData = totalRevenue > 0;
+
+    if (!hasData && !receiptProvider.isLoading) {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(localizations.translate('noDataForPaymentChart'), style: TextStyle(color: Colors.grey[600])),
+      ));
+    }
+
     final paymentColors = {
-      localizations.translate('cashPaymentType'): Colors.yellow,
-      localizations.translate('cardPaymentType'): Colors.blue,
-      localizations.translate('bankPaymentType'): Colors.red,
-      localizations.translate('otherPaymentType'): Colors.grey,
+      localizations.translate('cashPaymentType'): Colors.yellow.shade700,
+      localizations.translate('cardPaymentType'): Colors.blue.shade600,
+      localizations.translate('bankPaymentType'): Colors.red.shade600,
+      localizations.translate('otherPaymentType'): Colors.grey.shade500,
     };
 
-    final chartSections = paymentData.entries.map((entry) {
+    final chartSections = paymentData.entries
+        .where((entry) => entry.value > 0.001) // Zobrazit jen pokud je hodnota > 0 (malá tolerance pro double)
+        .map((entry) {
       final value = entry.value;
-      final percentage = (totalRevenue > 0)
-          ? (value / totalRevenue * 100).toDouble()
-          : 0.0;
-
+      final percentage = (totalRevenue > 0) ? (value / totalRevenue * 100).toDouble() : 0.0;
       return PieChartSectionData(
         color: paymentColors[entry.key],
-        value: percentage,
-        title: '${percentage.toStringAsFixed(1)}%',
-        radius: 100,
+        value: value, // Hodnota pro výpočet úhlu výseče
+        title: '${percentage.toStringAsFixed(0)}%',
+        radius: 80,
         titleStyle: const TextStyle(
-          fontSize: 16, fontWeight: FontWeight.bold,
-        ),
+            fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white,
+            shadows: <Shadow>[Shadow(color: Colors.black45, blurRadius: 2.0)]),
       );
     }).toList();
 
-    // Legenda
-    final legendItems = paymentData.keys.map((key) {
+    final legendItems = paymentData.entries
+        .where((entry) => entry.value > 0.001)
+        .map((entry) {
       return Padding(
-        padding: const EdgeInsets.all(6.0),
+        padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 6.0),
         child: Row(
           children: [
             Container(
-              width: 16,
-              height: 16,
-              color: paymentColors[key],
-              margin: const EdgeInsets.all(2.0),
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                  color: paymentColors[entry.key],
+                  shape: BoxShape.circle
+              ),
+              margin: const EdgeInsets.only(right: 8.0),
             ),
-            Text(key, style: const TextStyle(fontSize: 14)),
+            Expanded(child: Text('${entry.key} (${Utility.formatCurrency(entry.value)})', style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis,)),
           ],
         ),
       );
     }).toList();
 
     return Container(
-      padding: const EdgeInsets.all(6.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 6.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.0),
       ),
-      height: 300,
-      // color: Colors.white,
+      height: 280, // Mírně snížená výška
       child: Column(
         children: [
-          const SizedBox(height: 30),
-          Center(
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
             child: Text(
               localizations.translate('salesByPaymentType'),
               style: const TextStyle(
@@ -598,31 +571,38 @@ class _PaymentPieChartWidgetState extends State<PaymentPieChartWidget> {
               ),
             ),
           ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: PieChart(
-                    PieChartData(
-                      sections: chartSections,
-                      centerSpaceRadius: 0,
-                      sectionsSpace: 4,
-                      borderData: FlBorderData(show: false),
+          if (!hasData && receiptProvider.isLoading)
+            const Expanded(child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3,)))),
+          if (hasData)
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2, // Větší prostor pro graf
+                    child: chartSections.isNotEmpty ? PieChart( // Zobrazit graf jen pokud jsou data
+                      PieChartData(
+                        sections: chartSections,
+                        centerSpaceRadius: 0, // Plný koláč
+                        sectionsSpace: 2,
+                        borderData: FlBorderData(show: false),
+                        pieTouchData: PieTouchData( // Přidáno pro interakci
+                            touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                              // Zde můžete implementovat logiku pro interakci, např. zvýraznění výseče
+                            }
+                        ),
+                      ),
+                    ) : Center(child: Text(localizations.translate('noDataToDisplayInChart'), style: TextStyle(fontSize: 12, color: Colors.grey[600]))), // Přidat do lokalizace
+                  ),
+                  Expanded(
+                    flex: 1, // Menší prostor pro legendu
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: legendItems,
                     ),
                   ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: legendItems,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -630,53 +610,39 @@ class _PaymentPieChartWidgetState extends State<PaymentPieChartWidget> {
 }
 
 /// 6) Widget: TodayRevenue (blok s dnešní tržbou)
-class TodayRevenueWidget extends StatefulWidget {
+class TodayRevenueWidget extends StatelessWidget {
   const TodayRevenueWidget({super.key});
-
-  @override
-  State<TodayRevenueWidget> createState() => _TodayRevenueWidgetState();
-}
-
-class _TodayRevenueWidgetState extends State<TodayRevenueWidget> {
-  bool isLoading = false;
-  double todayRevenue = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-
-    // Můžeme například omezit data na dnešní den (dle logiky).
-    final now = DateTime.now();
-    receiptProvider.updateDateRange(
-      DateTimeRange(
-        start: DateTime(now.year, now.month, now.day),
-        end: DateTime(now.year, now.month, now.day, 23, 59, 59),
-      ),
-    );
-    await receiptProvider.fetchReceipts();
-
-    // Sečteme
-    todayRevenue = 0.0;
-    for (var r in receiptProvider.receipts) {
-      todayRevenue += (r['total'] as num?)?.toDouble() ?? 0.0;
-    }
-    setState(() => isLoading = false);
-  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    if (isLoading) {
+    final receiptProvider = context.watch<ReceiptProvider>();
+
+    if (receiptProvider.isLoading && receiptProvider.receipts.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(8.0),
+        child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3,))),
       );
+    }
+
+    double todayRevenue = 0.0;
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+
+    // Výpočet tržby pouze pro dnešní den, i když provider může obsahovat více
+    for (var r in receiptProvider.receipts) {
+      try {
+        DateTime receiptDate = DateTime.parse(r['dateTime']);
+        // Normalizace dat na půlnoc pro spolehlivé porovnání
+        DateTime receiptDateOnly = DateTime(receiptDate.year, receiptDate.month, receiptDate.day);
+
+        if (!receiptDateOnly.isBefore(todayStart) && !receiptDateOnly.isAfter(todayEnd)) {
+          todayRevenue += (r['total'] as num?)?.toDouble() ?? 0.0;
+        }
+      } catch (e) {
+        // Ignorovat chyby parsování data při výpočtu pro tento widget
+      }
     }
 
     return Container(

@@ -226,11 +226,12 @@
   "loadingData": "Načítám data...",
 
   "welcomeTitle": "Vítejte v EPOS Office",
-  "apiKeyExplanation": "Pro plné využití aplikace je potřeba zadat Váš API klíč. Tento klíč naleznete ve svém uživatelském profilu na webu Elementary POS (https://app.elementarypos.com/#/api).",
+  "apiKeyExplanation": "Pro plné využití aplikace je potřeba zadat Váš API klíč. Tento klíč naleznete ve svém uživatelském profilu na webu Elementary POS https://app.elementarypos.com/#/api.",
   "findApiKeyLinkText": "Kde najdu API klíč?",
   "pasteApiKeyHint": "Vložte API klíč zde",
   "apiKeyRequiredError": "API klíč je povinný.",
   "saveAndContinueButton": "Uložit a pokračovat",
   "invalidApiKeyError": "Zadaný API klíč není platný. Zkontrolujte jej prosím.",
-  "couldNotLaunchUrlError": "Nepodařilo se otevřít odkaz."
+  "couldNotLaunchUrlError": "Nepodařilo se otevřít odkaz.",
+  "appSubtitle": "Váš pomocník pro správu prodejů, produktů a zákazníků v rámci aplikace Elementary POS"
 }

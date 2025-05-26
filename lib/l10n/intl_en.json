@@ -214,12 +214,14 @@
   "csvImportSuccess": "CSV data imported successfully.",
   "csvImportError": "Error importing CSV data",
   "dataImportSectionTitle": "Data Import",
-  "importPurchasesFromCsvButton": "I  mport Purchases from CSV (m.csv)",
+  "importPurchasesFromCsvButton": "Import Purchases from CSV (m.csv)",
   "csvImportDescription": "Imports purchase history ansd updates reference product purchase prices from the included m.csv file.",
   "itemSummaryTooltip": "Items Summary",
   "itemSummaryDialogTitle": "Items Summary",
   "noReceiptsToSummarize": "No receipts to summarize.",
   "noItemsToSummarizeInDialog": "No items to summarize.",
-  "errorFetchingReceipts": "Error fetching receipts."
+  "errorFetchingReceipts": "Error fetching receipts.",
+  "languageNameCs": "Czech",
+  "languageNameEn": "English"
 
 }

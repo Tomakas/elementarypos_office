@@ -220,5 +220,7 @@
   "itemSummaryDialogTitle": "Souhrn položek",
   "noReceiptsToSummarize": "Žádné účtenky k vytvoření souhrnu.",
   "noItemsToSummarizeInDialog": "Žádné položky k souhrnu.",
-  "errorFetchingReceipts": "Chyba při načítání účtenek."
+  "errorFetchingReceipts": "Chyba při načítání účtenek.",
+  "languageNameCs": "Čeština",
+  "languageNameEn": "Angličtina"
 }

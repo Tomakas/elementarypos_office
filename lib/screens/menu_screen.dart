@@ -7,47 +7,46 @@ import 'purchases_screen.dart'; // Ujistěte se, že tento import je správný
 class MenuScreen extends StatelessWidget {
   final Future<void> Function(String) updateApiKey;
   final Function(Locale) onLanguageChange;
+  final VoidCallback onApiKeyCleared; // NOVĚ PŘIDANÝ POVINNÝ PARAMETR
 
   const MenuScreen({
     super.key,
     required this.updateApiKey,
     required this.onLanguageChange,
+    required this.onApiKeyCleared, // NOVĚ PŘIDANÝ POVINNÝ PARAMETR
   });
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    // ThemeData pro přístup k výchozím stylům, pokud bychom je chtěli použít
-    // final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          localizations.translate('menuTitle'), // Ujistěte se, že máte tento klíč v .json souborech
+          localizations.translate('menuTitle'),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20.0, // Explicitní velikost pro sjednocení
+            fontSize: 20.0,
           ),
         ),
         backgroundColor: Colors.grey[850],
-        automaticallyImplyLeading: false, // Menu je hlavní záložka, nepotřebuje šipku zpět
-        iconTheme: const IconThemeData(color: Colors.white), // Pro případné budoucí ikony v AppBar
+        automaticallyImplyLeading: false,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor, // Barva pozadí stejná jako jinde
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: ListView(
           children: <Widget>[
             ListTile(
               leading: const Icon(
                 Icons.shopping_cart,
-                color: Colors.black54, // Barva pro ikony v seznamu (můžete upravit)
-                size: 24.0, // Standardní velikost ikony
+                color: Colors.black54,
+                size: 24.0,
               ),
               title: Text(
                 localizations.translate('menuPurchases'),
                 style: const TextStyle(
-                  fontSize: 16.0, // Standardní velikost textu pro položky seznamu
-                  color: Colors.black87, // Barva textu (můžete upravit)
+                  fontSize: 16.0,
+                  color: Colors.black87,
                 ),
               ),
               onTap: () {
@@ -78,12 +77,12 @@ class MenuScreen extends StatelessWidget {
                     builder: (context) => SettingsScreen(
                       updateApiKey: updateApiKey,
                       onLanguageChange: onLanguageChange,
+                      onApiKeyCleared: onApiKeyCleared, // ZDE PŘEDÁVÁME CALLBACK
                     ),
                   ),
                 );
               },
             ),
-            // Zde můžete přidat další položky menu se stejným stylem
           ],
         ),
       ),

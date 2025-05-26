@@ -223,5 +223,14 @@
   "errorFetchingReceipts": "Chyba při načítání účtenek.",
   "languageNameCs": "Čeština",
   "languageNameEn": "Angličtina",
-  "loadingData": "Načítám data..."
+  "loadingData": "Načítám data...",
+
+  "welcomeTitle": "Vítejte v EPOS Office",
+  "apiKeyExplanation": "Pro plné využití aplikace je potřeba zadat Váš API klíč. Tento klíč naleznete ve svém uživatelském profilu na webu Elementary POS.",
+  "findApiKeyLinkText": "Kde najdu API klíč?",
+  "pasteApiKeyHint": "Vložte API klíč zde",
+  "apiKeyRequiredError": "API klíč je povinný.",
+  "saveAndContinueButton": "Uložit a pokračovat",
+  "invalidApiKeyError": "Zadaný API klíč není platný. Zkontrolujte jej prosím.",
+  "couldNotLaunchUrlError": "Nepodařilo se otevřít odkaz."
 }

@@ -223,5 +223,14 @@
   "errorFetchingReceipts": "Error fetching receipts.",
   "languageNameCs": "Czech",
   "languageNameEn": "English",
-  "loadingData": "Loading data..."
+  "loadingData": "Loading data...",
+
+  "welcomeTitle": "Welcome to EPOS Office",
+  "apiKeyExplanation": "To use all features of the application, you need to enter your API key. You can find this key in your user profile on the Elementary POS website.",
+  "findApiKeyLinkText": "Where do I find my API key?",
+  "pasteApiKeyHint": "Paste API key here",
+  "apiKeyRequiredError": "API key is required.",
+  "saveAndContinueButton": "Save and Continue",
+  "invalidApiKeyError": "The entered API key is not valid. Please check it.",
+  "couldNotLaunchUrlError": "Could not launch the URL."
 }

@@ -222,5 +222,6 @@
   "noItemsToSummarizeInDialog": "Žádné položky k souhrnu.",
   "errorFetchingReceipts": "Chyba při načítání účtenek.",
   "languageNameCs": "Čeština",
-  "languageNameEn": "Angličtina"
+  "languageNameEn": "Angličtina",
+  "loadingData": "Načítám data..."
 }

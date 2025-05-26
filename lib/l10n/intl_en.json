@@ -222,6 +222,6 @@
   "noItemsToSummarizeInDialog": "No items to summarize.",
   "errorFetchingReceipts": "Error fetching receipts.",
   "languageNameCs": "Czech",
-  "languageNameEn": "English"
-
+  "languageNameEn": "English",
+  "loadingData": "Loading data..."
 }

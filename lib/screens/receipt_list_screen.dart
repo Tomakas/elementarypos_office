@@ -17,7 +17,7 @@ class ItemSummary {
 
   void add(double quantity, double price) {
     this.quantity += quantity; //
-    this.totalPrice += price; //
+    totalPrice += price; //
   }
 }
 

@@ -85,9 +85,7 @@ class CsvImportService {
         }
       }
 
-      if (foundProduct == null) {
-        foundProduct = productProvider.getProductByName(itemName);
-      }
+      foundProduct ??= productProvider.getProductByName(itemName);
 
       if (foundProduct == null) {
         print('Produkt "$itemName" (mKod: "$mKodString") nebyl nalezen v ProductProvider. Položka bude přeskočena.');
@@ -113,15 +111,13 @@ class CsvImportService {
       itemsGroupedByDate[purchaseDate]!.add(purchaseItem);
 
       // Aktualizace nejnovější nákupní ceny pro produkt
-      if (purchasePrice != null) {
-        if (!lastDateByProductId.containsKey(productIdValue) || purchaseDate.isAfter(lastDateByProductId[productIdValue]!)) {
-          latestPurchasePricesByProductId[productIdValue] = purchasePrice;
-          lastDateByProductId[productIdValue] = purchaseDate;
-        } else if (purchaseDate.isAtSameMomentAs(lastDateByProductId[productIdValue]!) && purchasePrice > (latestPurchasePricesByProductId[productIdValue] ?? 0.0)) {
-          latestPurchasePricesByProductId[productIdValue] = purchasePrice;
-        }
+      if (!lastDateByProductId.containsKey(productIdValue) || purchaseDate.isAfter(lastDateByProductId[productIdValue]!)) {
+        latestPurchasePricesByProductId[productIdValue] = purchasePrice;
+        lastDateByProductId[productIdValue] = purchaseDate;
+      } else if (purchaseDate.isAtSameMomentAs(lastDateByProductId[productIdValue]!) && purchasePrice > (latestPurchasePricesByProductId[productIdValue] ?? 0.0)) {
+        latestPurchasePricesByProductId[productIdValue] = purchasePrice;
       }
-    }
+        }
 
     int purchaseNumberCounter = 1;
     itemsGroupedByDate.forEach((date, items) {

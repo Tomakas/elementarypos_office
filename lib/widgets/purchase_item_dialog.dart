@@ -587,7 +587,7 @@ class _PurchaseItemDialogWidgetState extends State<_PurchaseItemDialogWidget> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: Text(
-                    '${widget.localizations.translate('marginLabel')}: ${Utility.formatCurrency(_calculatedMarginAmount!, currencySymbol: currencySymbol, trimZeroDecimals: true)} (${_calculatedMarginPercentage != null ? _formatPriceValueForDisplay(_calculatedMarginPercentage) + '%' : widget.localizations.translate('notAvailableAbbreviation')})',
+                    '${widget.localizations.translate('marginLabel')}: ${Utility.formatCurrency(_calculatedMarginAmount!, currencySymbol: currencySymbol, trimZeroDecimals: true)} (${_calculatedMarginPercentage != null ? '${_formatPriceValueForDisplay(_calculatedMarginPercentage)}%' : widget.localizations.translate('notAvailableAbbreviation')})',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -632,6 +632,7 @@ class _PurchaseItemDialogWidgetState extends State<_PurchaseItemDialogWidget> {
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: _decrementQuantity,
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -640,11 +641,11 @@ class _PurchaseItemDialogWidgetState extends State<_PurchaseItemDialogWidget> {
                       ),
                       child: Icon(Icons.remove, size: 24, color: Colors.grey[800]),
                     ),
-                    borderRadius: BorderRadius.circular(8),
                   ),
                   const SizedBox(width: 6),
                   InkWell(
                     onTap: _incrementQuantity,
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -653,7 +654,6 @@ class _PurchaseItemDialogWidgetState extends State<_PurchaseItemDialogWidget> {
                       ),
                       child: Icon(Icons.add, size: 24, color: Colors.grey[800]),
                     ),
-                    borderRadius: BorderRadius.circular(8),
                   ),
                 ],
               ),
@@ -760,7 +760,7 @@ class _PurchaseItemDialogWidgetState extends State<_PurchaseItemDialogWidget> {
                       Text('${widget.localizations.translate('originalPurchasePriceLabel')}: ${Utility.formatCurrency(_previousUnitPriceForInfo!, currencySymbol: currencySymbol, trimZeroDecimals: true)}', style: TextStyle(color: Colors.orange[700])),
                       if (_originalMarginAmountForInfo != null)
                         Text(
-                          '${widget.localizations.translate('originalMarginLabel')}: ${Utility.formatCurrency(_originalMarginAmountForInfo!, currencySymbol: currencySymbol, trimZeroDecimals: true)} (${_originalMarginPercentageForInfo != null ? _formatPriceValueForDisplay(_originalMarginPercentageForInfo) + '%' : widget.localizations.translate('notAvailableAbbreviation')})',
+                          '${widget.localizations.translate('originalMarginLabel')}: ${Utility.formatCurrency(_originalMarginAmountForInfo!, currencySymbol: currencySymbol, trimZeroDecimals: true)} (${_originalMarginPercentageForInfo != null ? '${_formatPriceValueForDisplay(_originalMarginPercentageForInfo)}%' : widget.localizations.translate('notAvailableAbbreviation')})',
                           style: TextStyle(
                               color: Colors.orange[700],
                               fontWeight: FontWeight.w500),

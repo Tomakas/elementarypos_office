@@ -138,7 +138,7 @@ class ApiService {
         // Zde můžete implementovat logiku pro opakování pokusu nebo přerušení
         hasMorePages = false; // Přerušení v případě chyby na aktuální stránce
         // Můžete zvážit rethrow e; pokud chcete chybu zpracovat výše a informovat uživatele
-        throw e; // Nebo jednoduše vyhodit chybu dál, aby ji zachytil provider
+        rethrow; // Nebo jednoduše vyhodit chybu dál, aby ji zachytil provider
       }
 
       // Bezpečnostní pojistka proti nekonečné smyčce, pokud by API mělo neočekávané chování.

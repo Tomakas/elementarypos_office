@@ -155,10 +155,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   title: Text(localizations.translate('sortPurchasesByDateDesc')),
                   trailing: (_currentSortCriteria == 'date' && !_currentSortAscending) ? const Icon(Icons.check, color: Colors.blue) : null,
                   onTap: () {
-                    if(mounted) setState(() {
+                    if(mounted) {
+                      setState(() {
                       _currentSortCriteria = 'date';
                       _currentSortAscending = false;
                     });
+                    }
                     Navigator.of(context).pop();
                   },
                 ),
@@ -166,10 +168,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   title: Text(localizations.translate('sortPurchasesByDateAsc')),
                   trailing: (_currentSortCriteria == 'date' && _currentSortAscending) ? const Icon(Icons.check, color: Colors.blue) : null,
                   onTap: () {
-                    if(mounted) setState(() {
+                    if(mounted) {
+                      setState(() {
                       _currentSortCriteria = 'date';
                       _currentSortAscending = true;
                     });
+                    }
                     Navigator.of(context).pop();
                   },
                 ),
@@ -177,10 +181,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   title: Text(localizations.translate('sortPurchasesByPriceDesc')),
                   trailing: (_currentSortCriteria == 'price' && !_currentSortAscending) ? const Icon(Icons.check, color: Colors.blue) : null,
                   onTap: () {
-                    if(mounted) setState(() {
+                    if(mounted) {
+                      setState(() {
                       _currentSortCriteria = 'price';
                       _currentSortAscending = false;
                     });
+                    }
                     Navigator.of(context).pop();
                   },
                 ),
@@ -188,10 +194,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   title: Text(localizations.translate('sortPurchasesByPriceAsc')),
                   trailing: (_currentSortCriteria == 'price' && _currentSortAscending) ? const Icon(Icons.check, color: Colors.blue) : null,
                   onTap: () {
-                    if(mounted) setState(() {
+                    if(mounted) {
+                      setState(() {
                       _currentSortCriteria = 'price';
                       _currentSortAscending = true;
                     });
+                    }
                     Navigator.of(context).pop();
                   },
                 ),
@@ -243,7 +251,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                                 value: value,
                                 child: Text(value, overflow: TextOverflow.ellipsis),
                               );
-                            }).toList(),
+                            }),
                           ],
                           onChanged: (String? newValue) {
                             setStateDialog(() {
@@ -459,7 +467,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                             ],
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
               ],
@@ -598,7 +606,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                         child: Icon(Icons.receipt_long_outlined, color: Colors.blueGrey[600], size: 26),
                       ),
                       title: Text(
-                        '${purchase.supplier ?? localizations.translate('notAvailable')}',
+                        purchase.supplier ?? localizations.translate('notAvailable'),
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey[800]),
                         overflow: TextOverflow.ellipsis,
                       ),

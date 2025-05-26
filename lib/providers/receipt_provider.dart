@@ -79,18 +79,6 @@ class ReceiptProvider extends ChangeNotifier {
     dateRange = newDateRange;
   }
 
-  /// Aktualizace filtračních parametrů - parametry se ignorují
-  void updateFilters({
-    bool? showCash,
-    bool? showCard,
-    bool? showBank,
-    bool? showOther,
-    bool? showWithDiscount,
-  }) {
-    // Parametry se ignorují, protože filtr se aplikuje v ReceiptListScreen
-    // fetchReceipts(); // Nepotřebujeme volat fetchReceipts zde
-  }
-
   /// Vrací seznam nejprodávanějších produktů podle tržby.
   List<Map<String, dynamic>> getTopProducts({int limit = 5}) {
     final Map<String, Map<String, dynamic>> productData = {};

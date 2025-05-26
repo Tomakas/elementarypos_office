@@ -115,7 +115,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       print('Error while getting Receipts: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.translate('errorFetchingReceipts') ?? 'Error fetching receipts.'))
+            SnackBar(content: Text(AppLocalizations.of(context)!.translate('errorFetchingReceipts')))
         );
       }
     } finally {
@@ -287,7 +287,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
 
     if (currentReceipts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.translate('noReceiptsToSummarize') ?? 'No receipts to summarize.')),
+        SnackBar(content: Text(localizations.translate('noReceiptsToSummarize'))),
       );
       return;
     }
@@ -327,7 +327,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(localizations.translate('itemSummaryDialogTitle') ?? 'Items Summary'),
+          title: Text(localizations.translate('itemSummaryDialogTitle')),
           contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0), // Odsazení jako ve vašem kódu
           content: SizedBox(
             width: double.maxFinite,
@@ -336,7 +336,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 children: sortedItems.isEmpty
                     ? [Center(child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text(localizations.translate('noItemsToSummarizeInDialog') ?? 'No items to summarize.'),
+                  child: Text(localizations.translate('noItemsToSummarizeInDialog')),
                 ))]
                     : sortedItems.map((item) {
                   String trimmedName = item.name.length > 25 ? '${item.name.substring(0, 25)}...' : item.name;

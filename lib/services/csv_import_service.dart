@@ -1,10 +1,9 @@
 // lib/services/csv_import_service.dart
-import 'package:flutter/services.dart'; // Pro rootBundle, pokud bychom načítali zde (není teď přímo použito)
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/purchase_model.dart';
-import '../models/ui_purchase_item_model.dart'; // Předpokládáme, že tento model již má productId
+import '../models/ui_purchase_item_model.dart';
 import '../models/product_model.dart';
 import '../providers/product_provider.dart';
 

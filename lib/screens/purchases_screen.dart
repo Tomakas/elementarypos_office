@@ -7,8 +7,6 @@ import 'package:elementarypos_office/providers/purchase_provider.dart';
 import 'package:elementarypos_office/models/purchase_model.dart';
 import 'package:elementarypos_office/services/utility_services.dart';
 import 'package:elementarypos_office/screens/add_purchase_screen.dart';
-import 'package:elementarypos_office/models/ui_purchase_item_model.dart';
-
 
 class PurchasesScreen extends StatefulWidget {
   const PurchasesScreen({super.key});

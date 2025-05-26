@@ -6,6 +6,20 @@ import 'package:intl/intl.dart';
 import '../providers/receipt_provider.dart';
 import '../l10n/app_localizations.dart';
 
+// PŘIDANÁ TŘÍDA PRO SOUHRN POLOŽEK
+class ItemSummary {
+  String name;
+  double quantity; // Použijeme double pro množství
+  double totalPrice;
+
+  ItemSummary({required this.name, this.quantity = 0.0, this.totalPrice = 0.0});
+
+  void add(double quantity, double price) {
+    this.quantity += quantity;
+    this.totalPrice += price;
+  }
+}
+
 class ReceiptListScreen extends StatefulWidget {
   const ReceiptListScreen({super.key});
 
@@ -81,14 +95,15 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         paymentText = localizations.translate('otherPaymentType');
         break;
     }
-    return '$paymentText: ${Utility.formatCurrency(total)}';
+    String currencySymbol = localizations.translate('currency');
+    return '$paymentText: ${Utility.formatCurrency(total, currencySymbol: currencySymbol.isNotEmpty ? currencySymbol : null)}';
   }
 
   Future<void> _fetchReceipts() async {
     final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
     try {
       await receiptProvider.fetchReceipts(
-        dateRange: receiptProvider.dateRange, // Použijeme dateRange z providera
+        dateRange: receiptProvider.dateRange,
         showCash: showCash,
         showCard: showCard,
         showBank: showBank,
@@ -98,6 +113,11 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       print('Filtered Receipts (from provider): ${receiptProvider.receipts.length}');
     } catch (e) {
       print('Error while getting Receipts: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.translate('errorFetchingReceipts') ?? 'Error fetching receipts.'))
+        );
+      }
     } finally {
       if(mounted) {
         _updateDateRangeText(receiptProvider);
@@ -107,15 +127,21 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
 
   void _showDateRangePickerfilter(BuildContext context) async {
     final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
-    DateTimeRange? selectedDateRange;
-    selectedDateRange = await showDateRangePicker(
+    DateTimeRange? initialRange = receiptProvider.dateRange;
+    if (initialRange == null) {
+      final now = DateTime.now();
+      initialRange = DateTimeRange(start: now, end: now);
+    }
+
+    DateTimeRange? selectedDateRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)), // Umožníme výběr i budoucích dat pro případné plánování
-      initialDateRange: receiptProvider.dateRange,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: initialRange,
+      locale: Localizations.localeOf(context),
     );
     if (selectedDateRange != null) {
-      receiptProvider.updateDateRange(selectedDateRange); // Aktualizujeme dateRange v provideru
+      receiptProvider.updateDateRange(selectedDateRange);
       await _fetchReceipts();
     }
   }
@@ -253,6 +279,118 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     );
   }
 
+  // PŘIDANÁ METODA PRO ZOBRAZENÍ DIALOGU SOUHRNU
+  void _showItemsSummaryDialog() {
+    final localizations = AppLocalizations.of(context)!;
+    final receiptProvider = Provider.of<ReceiptProvider>(context, listen: false);
+    final List<dynamic> currentReceipts = receiptProvider.receipts;
+
+    if (currentReceipts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.translate('noReceiptsToSummarize') ?? 'No receipts to summarize.')),
+      );
+      return;
+    }
+
+    Map<String, ItemSummary> itemsSummary = {};
+
+    for (var receipt in currentReceipts) {
+      if (receipt['items'] != null && receipt['items'] is List) {
+        for (var item in (receipt['items'] as List)) {
+          String itemName = item['text'] as String? ?? localizations.translate('unknownItem');
+          double itemQuantity = (item['quantity'] as num?)?.toDouble() ?? 0.0;
+
+          // Použijeme 'priceToPay' pokud existuje, jinak 'itemPrice' * 'quantity'
+          // 'itemPrice' je zde bráno jako jednotková cena PŘED případnými slevami na položce.
+          // 'priceToPay' by měla být finální cena za daný počet kusů na řádku účtenky.
+          double lineItemTotalPrice;
+          if (item['priceToPay'] != null) {
+            lineItemTotalPrice = (item['priceToPay'] as num).toDouble();
+          } else {
+            double singleUnitPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0;
+            lineItemTotalPrice = singleUnitPrice * itemQuantity;
+          }
+
+          itemsSummary.putIfAbsent(
+            itemName,
+                () => ItemSummary(name: itemName),
+          ).add(itemQuantity, lineItemTotalPrice);
+        }
+      }
+    }
+
+    var sortedItems = itemsSummary.values.toList();
+    sortedItems.removeWhere((item) => item.quantity == 0 && item.totalPrice == 0);
+    sortedItems.sort((a, b) => b.totalPrice.compareTo(a.totalPrice));
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(localizations.translate('itemSummaryDialogTitle') ?? 'Items Summary'),
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0), // Odsazení jako ve vašem kódu
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: ListBody(
+                children: sortedItems.isEmpty
+                    ? [Center(child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text(localizations.translate('noItemsToSummarizeInDialog') ?? 'No items to summarize.'),
+                ))]
+                    : sortedItems.map((item) {
+                  String trimmedName = item.name.length > 25 ? '${item.name.substring(0, 25)}...' : item.name;
+
+                  String formattedQuantity;
+                  if (item.quantity == item.quantity.truncateToDouble()) {
+                    formattedQuantity = item.quantity.toInt().toString();
+                  } else {
+                    formattedQuantity = NumberFormat("0.##", localizations.locale.languageCode).format(item.quantity);
+                  }
+
+                  String currencySymbol = localizations.translate('currency');
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "$formattedQuantity x $trimmedName",
+                            style: const TextStyle(color: Colors.black, fontSize: 14), // Původní styl
+                          ),
+                        ),
+                        Text(
+                          // Formátování ceny jako ve vašem původním kódu
+                          "${item.totalPrice.toStringAsFixed(2)} ${currencySymbol.isNotEmpty ? currencySymbol : ''}",
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14), // Původní styl
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom( // Styl tlačítka podle vašeho původního kódu
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.grey[850],
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(localizations.translate('close')), // Použijeme existující klíč "close" pokud ho máte
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -264,21 +402,26 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         backgroundColor: Colors.grey[850],
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.date_range),
+            icon: const Icon(Icons.functions, color: Colors.white),
+            tooltip: localizations.translate('itemSummaryTooltip'),
+            onPressed: _showItemsSummaryDialog, // AKTUALIZOVANÁ AKCE
+          ),
+          IconButton(
+            icon: const Icon(Icons.date_range, color: Colors.white),
             tooltip: localizations.translate('dateRangeTooltip'),
             onPressed: () {
               _showDateRangePickerfilter(context);
             },
           ),
           IconButton(
-            icon: const Icon(Icons.sort),
+            icon: const Icon(Icons.sort, color: Colors.white),
             tooltip: localizations.translate('sortReceipts'),
             onPressed: () {
               _showSortDialog(context);
             },
           ),
           IconButton(
-            icon: const Icon(Icons.filter_alt_sharp),
+            icon: const Icon(Icons.filter_alt_sharp, color: Colors.white),
             tooltip: localizations.translate('filterTooltip'),
             onPressed: () {
               _showFilterDialog(context);
@@ -337,15 +480,15 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Flexible( // Přidáno Flexible pro zalamování textu
+                            Flexible(
                               child: Text(
-                                '${localizations.translate("Total")}: ${Utility.formatCurrency(totalValue)}',
+                                '${localizations.translate("Total")}: ${Utility.formatCurrency(totalValue, currencySymbol: localizations.translate('currency'))}',
                                 style: const TextStyle(
                                     fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 10), // Mezera
+                            const SizedBox(width: 10),
                             Text(
                               '${localizations.translate("receiptsCountShort")}: $totalReceipts',
                               style: const TextStyle(
@@ -377,7 +520,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                   if (receipt['items'] != null && receipt['items'] is List)
                                     ...receipt['items'].map<Widget>((item) {
                                       final quantity = (item['quantity'] as num?)?.toDouble() ?? 0.0;
-                                      final itemPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0;
+                                      final itemPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0; // Jednotková cena
                                       final isNegative = quantity < 0 || itemPrice < 0;
 
                                       String formattedQuantity;
@@ -388,8 +531,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                       }
 
                                       return Text(
-                                        // OPRAVA ZDE:
-                                        '${formattedQuantity}x ${item['text']}: ${Utility.formatCurrency(itemPrice)}',
+                                        '$formattedQuantity x ${item['text']}: ${Utility.formatCurrency(itemPrice, currencySymbol: localizations.translate('currency'))}',
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: isNegative ? Colors.red : Colors.black,

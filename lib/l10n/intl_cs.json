@@ -215,5 +215,10 @@
   "csvImportError": "Chyba při importu CSV dat",
   "dataImportSectionTitle": "Import dat",
   "importPurchasesFromCsvButton": "Načíst nákupy z CSV (m.csv)",
-  "csvImportDescription": "Importuje historii nákupů a aktualizuje referenční nákupní ceny produktů z přiloženého souboru m.csv."
+  "csvImportDescription": "Importuje historii nákupů a aktualizuje referenční nákupní ceny produktů z přiloženého souboru m.csv.",
+  "itemSummaryTooltip": "Souhrn položek",
+  "itemSummaryDialogTitle": "Souhrn položek",
+  "noReceiptsToSummarize": "Žádné účtenky k vytvoření souhrnu.",
+  "noItemsToSummarizeInDialog": "Žádné položky k souhrnu.",
+  "errorFetchingReceipts": "Chyba při načítání účtenek."
 }

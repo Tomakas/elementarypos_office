@@ -1,22 +1,22 @@
 // lib/screens/main_screen.dart
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
-// SettingsScreen se nyní bude volat z MenuScreen
-// import 'settings_screen.dart';
 import 'customers_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/product_list_screen.dart';
 import '../screens/receipt_list_screen.dart';
-import 'menu_screen.dart'; // <-- Import nové MenuScreen
+import 'menu_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final Future<void> Function(String) updateApiKey;
   final Function(Locale) onLanguageChange;
+  final VoidCallback onApiKeyCleared; // <--- TENTO PARAMETR MUSÍ BÝT DEFINOVÁN
 
   const MainScreen({
     super.key,
     required this.updateApiKey,
     required this.onLanguageChange,
+    required this.onApiKeyCleared, // <--- A ZDE V KONSTRUKTORU
   });
 
   @override
@@ -25,7 +25,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-
   late final List<Widget> _screens;
 
   @override
@@ -36,10 +35,10 @@ class _MainScreenState extends State<MainScreen> {
       const ReceiptListScreen(),
       const ProductListScreen(),
       const CustomersScreen(),
-      // Pátá obrazovka bude nyní MenuScreen
-      MenuScreen(
-        updateApiKey: widget.updateApiKey, // Předání parametrů
+      MenuScreen( // Při vytváření MenuScreen
+        updateApiKey: widget.updateApiKey,
         onLanguageChange: widget.onLanguageChange,
+        onApiKeyCleared: widget.onApiKeyCleared, // <--- PŘEDÁNÍ PARAMETRU ZDE (cca řádek 40)
       ),
     ];
   }
@@ -54,9 +53,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return Scaffold(
-      // AppBar se již nebude definovat zde, ale v každé jednotlivé obrazovce (Dashboard, Receipts, atd.)
-      // Drawer také nebude zde, protože jej nahrazuje MenuScreen
-      body: IndexedStack( // IndexedStack zachovává stav jednotlivých obrazovek
+      body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
       ),
@@ -84,10 +81,9 @@ class _MainScreenState extends State<MainScreen> {
             icon: const Icon(Icons.people),
             label: localizations?.translate('customersTitle'),
           ),
-          // Změna páté položky
           BottomNavigationBarItem(
-            icon: const Icon(Icons.menu), // Ikona pro Menu
-            label: localizations?.translate('menuMore'), // Nový lokalizační klíč pro "Více" nebo "Menu"
+            icon: const Icon(Icons.menu),
+            label: localizations?.translate('menuMore'),
           ),
         ],
       ),

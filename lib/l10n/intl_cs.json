@@ -226,7 +226,7 @@
   "loadingData": "Načítám data...",
 
   "welcomeTitle": "Vítejte v EPOS Office",
-  "apiKeyExplanation": "Pro plné využití aplikace je potřeba zadat Váš API klíč. Tento klíč naleznete ve svém uživatelském profilu na webu Elementary POS.",
+  "apiKeyExplanation": "Pro plné využití aplikace je potřeba zadat Váš API klíč. Tento klíč naleznete ve svém uživatelském profilu na webu Elementary POS (https://app.elementarypos.com/#/api).",
   "findApiKeyLinkText": "Kde najdu API klíč?",
   "pasteApiKeyHint": "Vložte API klíč zde",
   "apiKeyRequiredError": "API klíč je povinný.",

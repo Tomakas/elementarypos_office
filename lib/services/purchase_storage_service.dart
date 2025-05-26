@@ -28,7 +28,7 @@ class PurchaseStorageService {
       }
 
       final contents = await file.readAsString();
-      print('PurchaseStorageService: Obsah souboru: $contents');
+      // ODKOMENTOVAT pokud je potřeba v konzoli vidět data  print('PurchaseStorageService: Obsah souboru: $contents');
       if (contents.isEmpty) {
         print('PurchaseStorageService: Soubor ($_fileName) je prázdný, vracím prázdný seznam.');
         return [];

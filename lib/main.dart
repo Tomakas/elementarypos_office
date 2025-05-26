@@ -7,27 +7,36 @@ import 'screens/main_screen.dart';
 import 'providers/receipt_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/customer_provider.dart';
-import 'services/utility_services.dart';
-import 'l10n/app_localizations.dart';
-import 'providers/purchase_provider.dart';
+import 'services/utility_services.dart'; // Importováno pro StorageService
+import 'l10n/app_localizations.dart'; //
+import 'providers/purchase_provider.dart'; //
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final String? apiKey = await StorageService.getApiKey();
-  final Locale initialLocale = await LocalizationService.getLocale();
+  final String? apiKey = await StorageService.getApiKey(); //
+
+  // Původní způsob získání initialLocale pomocí LocalizationService
+  // final Locale initialLocale = await LocalizationService.getLocale(); //  // ODSTRANĚNO
+
+  // Nový způsob získání initialLocale přímo pomocí StorageService
+  final String? savedLanguageCode = await StorageService.getLanguageCode();
+  // Získání výchozího jazyka platformy pro případ, že žádný není uložen
+  final String defaultPlatformLanguageCode = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+  final Locale initialLocale = Locale(savedLanguageCode ?? defaultPlatformLanguageCode);
+
 
   runApp(MyApp(initialApiKey: apiKey, initialLocale: initialLocale));
 }
 
 class MyApp extends StatefulWidget {
-  final String? initialApiKey;
-  final Locale initialLocale;
+  final String? initialApiKey; //
+  final Locale initialLocale; //
 
-  const MyApp({super.key, this.initialApiKey, required this.initialLocale});
+  const MyApp({super.key, this.initialApiKey, required this.initialLocale}); //
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState(); //
 }
 
 class _MyAppState extends State<MyApp> {
@@ -36,7 +45,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _locale = widget.initialLocale;
+    _locale = widget.initialLocale; //
   }
 
   void _updateLocale(Locale newLocale) {
@@ -57,20 +66,19 @@ class _MyAppState extends State<MyApp> {
       child: MaterialApp(
         title: 'EPOS Office',
         locale: _locale,
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+        localizationsDelegates: const [ //
+          AppLocalizations.delegate, //
+          GlobalMaterialLocalizations.delegate, //
+          GlobalWidgetsLocalizations.delegate, //
+          GlobalCupertinoLocalizations.delegate, //
         ],
         supportedLocales: const [
           Locale('cs', 'CZ'),
           Locale('en', 'US'),
-          Locale('es', 'ES'),
-
+          Locale('es', 'ES'), //
         ],
         theme: ThemeData(
-        scaffoldBackgroundColor: Colors.grey[400],
+          scaffoldBackgroundColor: Colors.grey[400], //
         ),
         home: MainScreen(
           updateApiKey: (String apiKey) async {},

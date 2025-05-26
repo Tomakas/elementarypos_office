@@ -22,7 +22,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   bool isSearchActive = false;
   String searchText = "";
   String? currentCategoryId = ''; // Default to all categories
-  bool showOnlyOnSale = false; // Default changed to false
+  bool showOnlyOnSale = false;
   bool showOnlyInStock = false;
   List<Product> filteredProducts = [];
 
@@ -33,11 +33,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void initState() {
     super.initState();
     productProvider = Provider.of<ProductProvider>(context, listen: false);
-    productProvider.addListener(_onProductProviderChange); // Přidán listener
+    productProvider.addListener(_onProductProviderChange);
     _loadPreferences().then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await productProvider.fetchAllProductData();
-        // _applyAllFiltersAndSorting je již voláno v _onProductProviderChange nebo po fetchAllProductData
+        // Zajistíme, aby se data načetla, pokud ještě nejsou
+        if (productProvider.products.isEmpty || productProvider.categories.isEmpty) {
+          await productProvider.fetchAllProductData();
+        } else {
+          // Pokud data již jsou, jen aplikujeme filtry (což se stane přes _onProductProviderChange)
+          // nebo explicitně zde, pokud by listener nebyl spolehlivý při startu
+          _applyAllFiltersAndSorting(productProvider);
+        }
       });
     });
   }
@@ -55,7 +61,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       setState(() {
         currentSortCriteria = preferences['sortCriteria'] ?? "name";
         currentSortAscending = preferences['sortAscending'] ?? true;
-        showOnlyOnSale = preferences['showOnlyOnSale'] ?? false;
+        showOnlyOnSale = preferences['showOnlyOnSale'] ?? false; // Načtená hodnota, výchozí je v PreferencesHelper
         showOnlyInStock = preferences['showOnlyInStock'] ?? false;
         currentCategoryId = preferences['currentCategoryId'] ?? '';
       });
@@ -74,12 +80,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _onProductProviderChange() {
     if (mounted) {
-      // Provider data changed (e.g., after fetchAllProductData), re-apply filters
       _applyAllFiltersAndSorting(productProvider);
     }
   }
 
-  void _applySearch(String query) { // Odebrán nepotřebný argument provider
+  void _applySearch(String query) {
     if (mounted) {
       setState(() {
         searchText = query;
@@ -92,7 +97,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (!mounted) return;
 
     final originalList = provider.products;
-    List<Product> tempFilteredProducts = originalList;
+    List<Product> tempFilteredProducts = List.from(originalList);
 
     // Filter by category
     if (currentCategoryId != null && currentCategoryId!.isNotEmpty) {
@@ -108,11 +113,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
       }).toList();
     }
 
-    // Filter by inStock
+    // Filter by inStock (SKLADOVÉ POLOŽKY) - Zobrazí produkty s SKU, nezávisle na množství
     if (showOnlyInStock) {
       tempFilteredProducts = tempFilteredProducts.where((product) {
-        final quantityInStock = product.sku != null ? (provider.stockData[product.sku] ?? 0) : 0;
-        return quantityInStock > 0;
+        return product.sku != null && product.sku!.isNotEmpty;
       }).toList();
     }
 
@@ -122,14 +126,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
       tempFilteredProducts = tempFilteredProducts.where((product) {
         final normalizedName = Utility.normalizeString(product.itemName.toLowerCase());
         final normalizedCategory = Utility.normalizeString(product.categoryName.toLowerCase());
-        // Použití sellingPrice pro vyhledávání v ceně
         final normalizedPrice = Utility.normalizeString(product.sellingPrice.toString().toLowerCase());
         final normalizedSku = product.sku != null ? Utility.normalizeString(product.sku!.toLowerCase()) : '';
 
         return normalizedName.contains(normalizedSearchText) ||
             normalizedCategory.contains(normalizedSearchText) ||
             normalizedPrice.contains(normalizedSearchText) ||
-            normalizedSku.contains(normalizedSearchText);
+            (normalizedSku.isNotEmpty && normalizedSku.contains(normalizedSearchText));
       }).toList();
     }
 
@@ -140,16 +143,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
       switch (currentSortCriteria) {
         case 'price':
-          valueA = a.sellingPrice; // Aktualizováno na sellingPrice
-          valueB = b.sellingPrice; // Aktualizováno na sellingPrice
+          valueA = a.sellingPrice;
+          valueB = b.sellingPrice;
           break;
         case 'category':
           valueA = Utility.normalizeString(a.categoryName.toLowerCase());
           valueB = Utility.normalizeString(b.categoryName.toLowerCase());
           break;
         case 'quantity':
-          final qtyA = provider.stockData[a.sku] ?? 0.0;
-          final qtyB = provider.stockData[b.sku] ?? 0.0;
+          final qtyA = provider.stockData[a.sku] ?? (a.sku != null && a.sku!.isNotEmpty ? 0.0 : -double.infinity);
+          final qtyB = provider.stockData[b.sku] ?? (b.sku != null && b.sku!.isNotEmpty ? 0.0 : -double.infinity);
           valueA = qtyA;
           valueB = qtyB;
           break;
@@ -164,9 +167,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
       return currentSortAscending ? comparisonResult : -comparisonResult;
     });
 
-    setState(() {
-      filteredProducts = tempFilteredProducts;
-    });
+    if (mounted) {
+      setState(() {
+        filteredProducts = tempFilteredProducts;
+      });
+    }
   }
 
   void _showSortDialog(BuildContext context) {
@@ -195,7 +200,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   },
                 ),
                 ListTile(
-                  title: Text(localizations.translate('priceAscending')), // Název je "price..." ale třídí se podle sellingPrice
+                  title: Text(localizations.translate('priceAscending')),
                   onTap: () {
                     _applySorting('price', true);
                     Navigator.of(context).pop();
@@ -256,13 +261,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _showCategoryFilterDialog(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    // Ensure categories are loaded, but don't make it part of this dialog's state logic directly
-    if (productProvider.categories.isEmpty) {
+    if (productProvider.categories.isEmpty && mounted) {
       await productProvider.fetchCategories();
     }
+    if (!mounted) return;
 
 
-    // Temporary state for the dialog
     String? dialogCategoryId = currentCategoryId;
     bool dialogShowOnlyOnSale = showOnlyOnSale;
     bool dialogShowOnlyInStock = showOnlyInStock;
@@ -270,7 +274,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder( // Use StatefulBuilder for dialog's own state
+        return StatefulBuilder(
             builder: (context, setStateSB) {
               return AlertDialog(
                 title: Text(localizations.translate('filterProducts')),
@@ -285,7 +289,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         decoration: const InputDecoration(border: OutlineInputBorder()),
                         items: [
                           DropdownMenuItem<String>(
-                            value: '', // Represents "All Categories"
+                            value: '',
                             child: Text(localizations.translate('allCategories')),
                           ),
                           ...productProvider.categories.map((category) {
@@ -296,7 +300,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           }),
                         ],
                         onChanged: (value) {
-                          setStateSB(() { // Update dialog's temporary state
+                          setStateSB(() {
                             dialogCategoryId = value;
                           });
                         },
@@ -306,7 +310,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         title: Text(localizations.translate('onlyOnSale')),
                         value: dialogShowOnlyOnSale,
                         onChanged: (value) {
-                          setStateSB(() { // Update dialog's temporary state
+                          setStateSB(() {
                             dialogShowOnlyOnSale = value;
                           });
                         },
@@ -315,7 +319,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         title: Text(localizations.translate('stockItems')),
                         value: dialogShowOnlyInStock,
                         onChanged: (value) {
-                          setStateSB(() { // Update dialog's temporary state
+                          setStateSB(() {
                             dialogShowOnlyInStock = value;
                           });
                         },
@@ -331,7 +335,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (mounted) {
-                        setState(() { // Apply changes to the screen's state
+                        setState(() {
                           currentCategoryId = dialogCategoryId;
                           showOnlyOnSale = dialogShowOnlyOnSale;
                           showOnlyInStock = dialogShowOnlyInStock;
@@ -360,6 +364,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.grey[850],
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
@@ -369,7 +374,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 isSearchActive = !isSearchActive;
                 if (!isSearchActive) {
                   searchText = "";
-                  _applySearch(""); // Apply empty search to refresh
+                  _applySearch("");
                 }
               });
             },
@@ -387,20 +392,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
         ],
         bottom: isSearchActive
             ? PreferredSize(
-          preferredSize: const Size.fromHeight(48.0),
+          preferredSize: const Size.fromHeight(kToolbarHeight - 8),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Added padding
+            padding: const EdgeInsets.fromLTRB(8.0, 0, 8.0, 8.0),
             child: TextField(
+              autofocus: true,
               decoration: InputDecoration(
                 hintText: localizations.translate('searchForProduct'),
                 hintStyle: const TextStyle(color: Colors.grey),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16.0),
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+                isDense: true,
               ),
-              style: const TextStyle(color: Colors.black),
+              style: const TextStyle(color: Colors.black, fontSize: 15),
               onChanged: (value) => _applySearch(value),
             ),
           ),
@@ -409,40 +416,53 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
       body: Consumer<ProductProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading && filteredProducts.isEmpty) { // Show loader only if products not yet loaded
+          if (provider.isLoading && filteredProducts.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (provider.products.isEmpty && !provider.isLoading) {
             return Center(
-              child: Text(localizations.translate('noProductsAvailable')),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(localizations.translate('noProductsAvailable'), textAlign: TextAlign.center),
+                )
             );
           }
-
-          if (filteredProducts.isEmpty && searchText.isNotEmpty) {
+          if (filteredProducts.isEmpty && (searchText.isNotEmpty || (currentCategoryId != null && currentCategoryId!.isNotEmpty) || showOnlyOnSale || showOnlyInStock) && !provider.isLoading ) {
             return Center(
-              child: Text(localizations.translate('noProductsMatchFilter')), // PŘIDAT DO LOKALIZACE
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(localizations.translate('noProductsMatchFilter'), textAlign: TextAlign.center),
+                )
             );
           }
-
+          if (filteredProducts.isEmpty && provider.products.isNotEmpty && !provider.isLoading && searchText.isEmpty && (currentCategoryId == null || currentCategoryId!.isEmpty) && !showOnlyOnSale && !showOnlyInStock) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if(mounted) _applyAllFiltersAndSorting(provider);
+            });
+            return const Center(child: CircularProgressIndicator());
+          }
 
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 70.0),
             itemCount: filteredProducts.length,
             itemBuilder: (context, index) {
               final product = filteredProducts[index];
               return ProductWidget(
                 product: product,
-                categories: provider.categories, // Pass categories from provider
-                stockQuantity: provider.stockData[product.sku],
+                categories: provider.categories, // <<== VRÁCENÝ PARAMETR
+                stockQuantity: product.sku != null ? provider.stockData[product.sku] : null,
                 isExpanded: expandedProductId == product.itemId,
                 onExpand: () {
-                  setState(() {
-                    if (expandedProductId == product.itemId) {
-                      expandedProductId = null;
-                    } else {
-                      expandedProductId = product.itemId;
-                    }
-                  });
+                  if (mounted) {
+                    setState(() {
+                      if (expandedProductId == product.itemId) {
+                        expandedProductId = null;
+                      } else {
+                        expandedProductId = product.itemId;
+                      }
+                    });
+                  }
                 },
                 highlightText: searchText,
               );
@@ -453,22 +473,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'productListScreenFAB',
         onPressed: () async {
-          if (productProvider.categories.isEmpty) {
+          if (productProvider.categories.isEmpty && mounted) {
             await productProvider.fetchCategories();
           }
+          if (!mounted) return;
+
           final result = await Navigator.of(context).push<bool?>(
             MaterialPageRoute(
               builder: (context) => EditProductScreen(
                 categories: productProvider.categories,
-                product: null, // Creating a new product
+                product: null,
               ),
             ),
           );
 
-          if (result == true) {
-            // Data already re-fetched and filters re-applied by _onProductProviderChange
-            // or directly if addProduct in provider calls notifyListeners which
-            // triggers _onProductProviderChange
+          if (result == true && mounted) {
+            // Není třeba nic dělat, _onProductProviderChange se postará o refresh
           }
         },
         backgroundColor: Colors.grey[850],
@@ -478,3 +498,4 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 }
+

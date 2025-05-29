@@ -233,5 +233,20 @@
   "saveAndContinueButton": "Uložit a pokračovat",
   "invalidApiKeyError": "Zadaný API klíč není platný. Zkontrolujte jej prosím.",
   "couldNotLaunchUrlError": "Nepodařilo se otevřít odkaz.",
-  "appSubtitle": "Váš pomocník pro správu prodejů, produktů a zákazníků v rámci aplikace Elementary POS"
+  "appSubtitle": "Váš pomocník pro správu prodejů, produktů a zákazníků v rámci aplikace Elementary POS",
+
+  "productAddedSuccess": "Produkt byl úspěšně přidán.",
+  "productEditedSuccess": "Produkt byl úspěšně upraven.",
+  "apiKeyMissingError": "Chybí API klíč. Prosím, nakonfigurujte jej v nastavení.",
+  "errorLoadingTaxSettings": "Chyba při načítání daňových sazeb.",
+  "applySort": "Použít",
+  "viewByCategories": "Zobrazit podle kategorií",
+  "noProductsInCategory": "V této kategorii nejsou žádné produkty.",
+  "productsNotLoadedYet": "Produkty ještě nebyly načteny.",
+  "errorLoadingDashboardData": "Chyba při načítání dat nástěnky.",
+  "noDataForTopProducts": "Žádná data pro nejprodávanější produkty.",
+  "noDataForTopCategories": "Žádná data pro nejprodávanější kategorie.",
+  "noDataForHourlyGraph": "Žádná data pro hodinový graf.",
+  "noDataForPaymentChart": "Žádná data pro graf plateb.",
+  "noDataToDisplayInChart": "Žádná data k zobrazení v grafu."
 }

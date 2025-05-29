@@ -233,5 +233,20 @@
   "saveAndContinueButton": "Save and Continue",
   "invalidApiKeyError": "The entered API key is not valid. Please check it.",
   "couldNotLaunchUrlError": "Could not launch the URL.",
-  "appSubtitle": "Your assistant for managing sales, products and customers in Elementary POS."
+  "appSubtitle": "Your assistant for managing sales, products and customers in Elementary POS.",
+
+  "productAddedSuccess": "Product added successfully.",
+  "productEditedSuccess": "Product edited successfully.",
+  "apiKeyMissingError": "API key is missing. Please configure it in settings.",
+  "errorLoadingTaxSettings": "Error loading tax settings.",
+  "applySort": "Apply",
+  "viewByCategories": "View by Categories",
+  "noProductsInCategory": "No products in this category.",
+  "productsNotLoadedYet": "Products not loaded yet.",
+  "errorLoadingDashboardData": "Error loading dashboard data.",
+  "noDataForTopProducts": "No data for top products.",
+  "noDataForTopCategories": "No data for top categories.",
+  "noDataForHourlyGraph": "No data for hourly graph.",
+  "noDataForPaymentChart": "No data for payment chart.",
+  "noDataToDisplayInChart": "No data to display in chart."
 }

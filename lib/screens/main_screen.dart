@@ -10,13 +10,13 @@ import 'menu_screen.dart';
 class MainScreen extends StatefulWidget {
   final Future<void> Function(String) updateApiKey;
   final Function(Locale) onLanguageChange;
-  final VoidCallback onApiKeyCleared; // <--- TENTO PARAMETR MUSÍ BÝT DEFINOVÁN
+  final VoidCallback onApiKeyCleared;
 
   const MainScreen({
     super.key,
     required this.updateApiKey,
     required this.onLanguageChange,
-    required this.onApiKeyCleared, // <--- A ZDE V KONSTRUKTORU
+    required this.onApiKeyCleared,
   });
 
   @override
@@ -25,23 +25,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = [
-      const DashboardScreen(),
-      const ReceiptListScreen(),
-      const ProductListScreen(),
-      const CustomersScreen(),
-      MenuScreen( // Při vytváření MenuScreen
-        updateApiKey: widget.updateApiKey,
-        onLanguageChange: widget.onLanguageChange,
-        onApiKeyCleared: widget.onApiKeyCleared, // <--- PŘEDÁNÍ PARAMETRU ZDE (cca řádek 40)
-      ),
-    ];
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -52,10 +35,28 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+
+    // Seznam obrazovek vytváříme zde, aby se parametr 'isSelected' správně
+    // předával při každém překreslení (změně _selectedIndex)
+    final List<Widget> screens = [
+      DashboardScreen(isSelected: _selectedIndex == 0),
+      ReceiptListScreen(isSelected: _selectedIndex == 1),
+      ProductListScreen(isSelected: _selectedIndex == 2),
+      CustomersScreen(isSelected: _selectedIndex == 3),
+      MenuScreen(
+        updateApiKey: widget.updateApiKey,
+        onLanguageChange: widget.onLanguageChange,
+        onApiKeyCleared: widget.onApiKeyCleared,
+        // Pro MenuScreen pravděpodobně nepotřebujeme isSelected pro znovunačítání dat,
+        // ale pokud bys chtěl konzistenci, mohl bys ho přidat i sem:
+        // isSelected: _selectedIndex == 4,
+      ),
+    ];
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,

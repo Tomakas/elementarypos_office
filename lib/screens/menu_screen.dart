@@ -29,7 +29,7 @@ class MenuScreen extends StatelessWidget {
           ),
         ),
         backgroundColor: Colors.grey[850],
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false, // Důležité, pokud nechceme zpětnou šipku
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
@@ -70,14 +70,14 @@ class MenuScreen extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
-              onTap: () {
+              onTap: () { // Toto je přibližně řádek 47, na který ukazuje druhá chyba
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => SettingsScreen(
-                      updateApiKey: updateApiKey,
-                      onLanguageChange: onLanguageChange,
-                      onApiKeyCleared: onApiKeyCleared, // ZDE PŘEDÁVÁME CALLBACK
+                      updateApiKey: updateApiKey, // Přistupuje k 'this.updateApiKey'
+                      onLanguageChange: onLanguageChange, // Přistupuje k 'this.onLanguageChange'
+                      onApiKeyCleared: onApiKeyCleared, // Přistupuje k 'this.onApiKeyCleared'
                     ),
                   ),
                 );

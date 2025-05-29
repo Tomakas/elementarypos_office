@@ -3,169 +3,143 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
-import '../providers/product_provider.dart'; // Potřebné pro getTopCategories
+import '../providers/product_provider.dart'; // Potřebné pro getTopCategoriesFromList
+import '../l10n/app_localizations.dart';
+
 
 class ReceiptProvider extends ChangeNotifier {
-  List receipts = [];
-  bool isLoading = false;
-  // Rozsah dat pro filtrování
-  DateTimeRange? dateRange; // [cite: 196]
+  bool _isLoading = false;
+  DateTimeRange? _currentDateRange; // Interní stav pro datumový rozsah používaný obrazovkami
 
-  ReceiptProvider();
+  bool get isLoading => _isLoading;
+  DateTimeRange? get currentDateRange => _currentDateRange;
 
-  /// Celkový příjem z účtenek
-  double get totalRevenue {
-    return receipts.fold(
-        0.0, (sum, receipt) => sum + (receipt['total'] as num).toDouble()); // [cite: 196]
+  /// Aktualizuje interní datumový rozsah.
+  /// Obrazovky by měly po zavolání této metody typicky spustit fetchReceipts.
+  void updateDateRange(DateTimeRange? newDateRange) {
+    _currentDateRange = newDateRange;
+    // Zde nevoláme notifyListeners() záměrně.
+    // Změna samotného rozsahu nemusí nutně znamenat nová data, dokud se nespustí fetch.
+    // Obrazovka, která mění rozsah, by měla být zodpovědná za vyvolání fetch.
+    // Pokud bys chtěl, aby jiné widgety reagovaly přímo na změnu _currentDateRange,
+    // mohl bys zde notifyListeners() přidat, ale pak by se muselo ošetřit, jak se s tím pracuje.
   }
 
-  /// Průměrná hodnota účtenky
-  double get averageValue {
-    return receipts.isNotEmpty ? totalRevenue / receipts.length : 0.0; // [cite: 197, 198]
-  }
-
-  // Upravená metoda fetchReceipts - přijímá filtrační parametry
-  Future<void> fetchReceipts({
-    DateTimeRange? dateRange,
+  /// Načte účtenky z API a vrátí je jako seznam.
+  /// Filtrování probíhá na základě předaných parametrů.
+  Future<List<dynamic>> fetchReceipts({
+    required DateTimeRange dateRange, // Datumový rozsah je nyní vyžadován přímo od volajícího
     bool showCash = true,
     bool showCard = true,
     bool showBank = true,
     bool showOther = true,
     bool showWithDiscount = false,
   }) async {
-    isLoading = true; // [cite: 199]
-    notifyListeners(); // [cite: 199]
+    _isLoading = true;
+    notifyListeners(); // Oznamujeme začátek načítání
+
+    List<dynamic> fetchedAndFilteredReceipts = [];
     try {
-      // Získání rozsahu dat
-      String dateFrom = dateRange != null
-          ? DateFormat('yyyy-MM-dd').format(dateRange.start) // [cite: 199, 200]
-          : DateFormat('yyyy-MM-dd').format(DateTime.now()); // [cite: 200]
-      String dateTo = dateRange != null
-          ? DateFormat('yyyy-MM-dd').format(dateRange.end) // [cite: 201, 202]
-          : DateFormat('yyyy-MM-dd').format(DateTime.now()); // [cite: 202]
+      String dateFrom = DateFormat('yyyy-MM-dd').format(dateRange.start);
+      String dateTo = DateFormat('yyyy-MM-dd').format(dateRange.end);
 
-      print('Loading ALL Receipts (with pagination), date from: $dateFrom, to: $dateTo');
-      // Volání upravené metody ApiService.fetchReceipts, která řeší paginaci interně.
-      // 'initialLimit' je zde použit pro první volání v rámci paginace v ApiService.
-      List allReceipts = await ApiService.fetchReceipts(dateFrom, dateTo, initialLimit: 500); // [cite: 203]
+      print('ReceiptProvider: Načítám účtenky z API pro rozsah $dateFrom do $dateTo');
+      List allApiReceipts = await ApiService.fetchReceipts(dateFrom, dateTo, initialLimit: 500);
 
-      // Filtrace účtenek - přesunuto z ReceiptListScreen (zůstává)
-      receipts = allReceipts.where((receipt) {
-        String paymentType = receipt['paymentType'];
+      fetchedAndFilteredReceipts = allApiReceipts.where((receipt) {
+        String paymentType = receipt['paymentType'] ?? 'OTHER';
         bool matchesPayment = (paymentType == 'CASH' && showCash) ||
             (paymentType == 'CARD' && showCard) ||
             (paymentType == 'BANK' && showBank) ||
-            (paymentType == 'CRYPTO' && showOther);
+            (paymentType == 'CRYPTO' && showOther) || // Předpokládáme, že 'CRYPTO' je mapováno na 'otherFilter'
+            (paymentType == 'OTHER' && showOther);
 
-        bool hasDiscount = false; // [cite: 204]
-        if (receipt['items'] != null && receipt['items'] is List) { // [cite: 204]
-          hasDiscount = (receipt['items'] as List).any((item) { // [cite: 204]
-            var price = item['itemPrice']; // [cite: 204]
-            return price is num && price < 0; // [cite: 204]
+
+        bool hasDiscount = false;
+        if (receipt['items'] != null && receipt['items'] is List) {
+          hasDiscount = (receipt['items'] as List).any((item) {
+            var price = item['itemPrice'];
+            return price is num && price < 0;
           });
         }
-
-        return matchesPayment && (!showWithDiscount || hasDiscount); // [cite: 205]
+        return matchesPayment && (!showWithDiscount || hasDiscount);
       }).toList();
-
-      print('Filtered Receipts (after pagination): ${receipts.length}'); // [cite: 205]
+      print('ReceiptProvider: Načteno a filtrováno ${fetchedAndFilteredReceipts.length} účtenek.');
     } catch (e) {
-      print('Error while getting Receipts in Provider: $e'); // [cite: 206]
-      // Zde můžete přidat specifickou chybovou hlášku pro uživatele, pokud je potřeba
-      receipts = []; // V případě chyby vyprázdníme seznam, aby se nezobrazovala stará data
+      print('ReceiptProvider: Chyba při načítání účtenek: $e');
+      // Můžeš zvážit rethrow e; pokud chceš chybu zpracovat výše
     } finally {
-      isLoading = false; // [cite: 207]
-      notifyListeners(); // [cite: 207, 208]
+      _isLoading = false;
+      notifyListeners(); // Oznamujeme konec načítání
     }
+    return fetchedAndFilteredReceipts;
   }
 
-  /// Aktualizace rozsahu dat
-  void updateDateRange(DateTimeRange? newDateRange) {
-    dateRange = newDateRange; // [cite: 208, 209]
-    // Není potřeba zde volat notifyListeners(), fetchReceipts to udělá po načtení
+  // --- Statické pomocné metody pro výpočty nad seznamem účtenek ---
+
+  static double calculateTotalRevenue(List<dynamic> receiptsToCalculate) {
+    if (receiptsToCalculate.isEmpty) return 0.0;
+    return receiptsToCalculate.fold(
+        0.0, (sum, receipt) => sum + ((receipt['total'] as num?)?.toDouble() ?? 0.0));
   }
 
-  /// Vrací seznam nejprodávanějších produktů podle tržby.
-  List<Map<String, dynamic>> getTopProducts({int limit = 5}) {
-    final Map<String, Map<String, dynamic>> productData = {}; // [cite: 209]
-    for (var receipt in receipts) { // [cite: 210]
-      if (receipt['items'] != null && receipt['items'] is List) { // [cite: 210]
-        for (var item in receipt['items']) { // [cite: 210]
-          final productName = item['text'] ?? ''; // [cite: 210, 211]
+  static double calculateAverageValue(List<dynamic> receiptsToCalculate) {
+    if (receiptsToCalculate.isEmpty) return 0.0;
+    double totalRevenue = calculateTotalRevenue(receiptsToCalculate);
+    return totalRevenue / receiptsToCalculate.length;
+  }
 
-          if (!productData.containsKey(productName)) { // [cite: 211]
-            productData[productName] = { // [cite: 211]
-              'name': productName, // [cite: 211]
-              'quantity': 0.0, // [cite: 211]
-              'revenue': 0.0, // [cite: 211]
-            };
+  static List<Map<String, dynamic>> getTopProductsFromList(List<dynamic> receiptsToCalculate, {int limit = 5}) {
+    final Map<String, Map<String, dynamic>> productData = {};
+    for (var receipt in receiptsToCalculate) {
+      if (receipt['items'] != null && receipt['items'] is List) {
+        for (var item in receipt['items']) {
+          final productName = item['text'] as String? ?? 'Neznámý produkt'; // Můžeš lokalizovat
+          if (!productData.containsKey(productName)) {
+            productData[productName] = {'name': productName, 'quantity': 0.0, 'revenue': 0.0};
           }
-          productData[productName]!['quantity'] +=
-              (item['quantity'] as num).toDouble(); // [cite: 212, 213]
-          productData[productName]!['revenue'] +=
-              (item['priceToPay'] as num).toDouble(); // [cite: 213, 214]
+          // Předpokládáme, že 'quantity' a 'priceToPay' jsou typu num
+          productData[productName]!['quantity'] += (item['quantity'] as num?)?.toDouble() ?? 0.0;
+          productData[productName]!['revenue'] += (item['priceToPay'] as num?)?.toDouble() ?? 0.0;
         }
       }
     }
-
-    final topList = productData.values.toList() // [cite: 214]
-      ..sort((a, b) => b['revenue'].compareTo(a['revenue'])); // [cite: 214]
-    return topList.take(limit).toList(); // [cite: 215]
+    final topList = productData.values.toList()
+      ..sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+    return topList.take(limit).toList();
   }
 
-  /// Vrací seznam nejprodávanějších kategorií podle tržby (revenue).
-  /// Struktura: [{ 'name': ..., 'quantity': ..., 'revenue': ... }, ...]
-  List<Map<String, dynamic>> getTopCategories({ // [cite: 216]
-    int limit = 5,
-    required ProductProvider productProvider,
-  }) {
-    final Map<String, Map<String, dynamic>> categoryMap = {}; // [cite: 216]
-    for (var receipt in receipts) { // [cite: 217]
-      if (receipt['items'] != null && receipt['items'] is List) { // [cite: 217]
-        for (var item in receipt['items']) { // [cite: 217]
-          final productName = item['text'] ?? ''; // [cite: 217, 218]
-          final product = productProvider.getProductByName(productName); // [cite: 218]
+  static List<Map<String, dynamic>> getTopCategoriesFromList(
+      List<dynamic> receiptsToCalculate, {
+        int limit = 5,
+        required ProductProvider productProvider, // ProductProvider je stále potřeba pro mapování produktů na kategorie
+        required AppLocalizations localizations, // Pro lokalizaci "Uncategorized"
+      }) {
+    final Map<String, Map<String, dynamic>> categoryMap = {};
+    for (var receipt in receiptsToCalculate) {
+      if (receipt['items'] != null && receipt['items'] is List) {
+        for (var item in receipt['items']) {
+          final productName = item['text'] as String? ?? '';
+          final product = productProvider.getProductByName(productName); // Vyhledání produktu
 
-          final category = product?.categoryName ?? 'Uncategorized'; // [cite: 218]
-          final double quantity = (item['quantity'] as num?)?.toDouble() ?? 0.0; // [cite: 218]
-          final double price = (item['itemPrice'] as num?)?.toDouble() ?? 0.0; // [cite: 219]
-          final double revenue = quantity * price; // [cite: 219]
-          if (!categoryMap.containsKey(category)) { // [cite: 220]
-            categoryMap[category] = { // [cite: 220]
-              'name': category, // [cite: 220]
-              'quantity': 0.0, // [cite: 220]
-              'revenue': 0.0, // [cite: 221]
-            };
+          // Použijeme název kategorie z produktu, nebo výchozí, pokud produkt/kategorie není nalezena
+          final category = product?.categoryName ?? localizations.translate('unknownCategory');
+
+          final double quantity = (item['quantity'] as num?)?.toDouble() ?? 0.0;
+          // Pro revenue z kategorie použijeme itemPrice * quantity, priceToPay může zahrnovat slevy na celou účtenku
+          final double itemPrice = (item['itemPrice'] as num?)?.toDouble() ?? 0.0;
+          final double revenue = quantity * itemPrice;
+
+          if (!categoryMap.containsKey(category)) {
+            categoryMap[category] = {'name': category, 'quantity': 0.0, 'revenue': 0.0};
           }
-          categoryMap[category]!['quantity'] += quantity; // [cite: 221]
-          categoryMap[category]!['revenue'] += revenue; // [cite: 221, 222]
+          categoryMap[category]!['quantity'] += quantity;
+          categoryMap[category]!['revenue'] += revenue;
         }
       }
     }
-
-    final sortedCategories = categoryMap.values.toList() // [cite: 222]
-      ..sort((a, b) => b['revenue'].compareTo(a['revenue'])); // [cite: 222]
-    return sortedCategories.take(limit).toList(); // [cite: 223]
-  }
-
-  // Řazení účtenek
-  void sortReceipts(String criteria, bool ascending) {
-    receipts.sort((a, b) { // [cite: 223]
-      dynamic valueA;
-      dynamic valueB;
-      if (criteria == 'price') { // [cite: 223]
-        valueA = a['total']; // [cite: 223]
-        valueB = b['total']; // [cite: 223]
-      } else if (criteria == 'time') { // [cite: 223]
-        valueA = DateTime.parse(a['dateTime']); // [cite: 223]
-        valueB = DateTime.parse(b['dateTime']); // [cite: 223, 224]
-      }
-      if (ascending) { // [cite: 224]
-        return Comparable.compare(valueA, valueB); // [cite: 224]
-      } else {
-        return Comparable.compare(valueB, valueA); // [cite: 224]
-      }
-    });
-    notifyListeners(); // [cite: 225]
+    final sortedCategories = categoryMap.values.toList()
+      ..sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+    return sortedCategories.take(limit).toList();
   }
 }

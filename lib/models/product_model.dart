@@ -56,13 +56,12 @@ class Product {
       'code': code,
       'itemName': itemName,
       'taxId': taxId,
-      'sellingPrice': sellingPrice, // Aktualizováno
-      'purchasePrice': purchasePrice, // Přidáno
+      'price': sellingPrice, // <--- ZMĚNĚNO Z 'sellingPrice' NA 'price'
+      'purchasePrice': purchasePrice,
       'currency': currency,
       'color': color,
       'sku': sku,
       'categoryId': categoryId,
-      'categoryName': categoryName,
       'note': note,
       'onSale': onSale,
     };

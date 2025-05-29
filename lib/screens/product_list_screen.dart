@@ -379,16 +379,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
             );
           }
       ),
-      floatingActionButton: FloatingActionButton( /* ... FAB zůstává stejný ... */
+// Opravený kód v lib/screens/product_list_screen.dart
+      floatingActionButton: FloatingActionButton(
         heroTag: 'productListScreenFAB',
         onPressed: () async {
-          // Použijeme instanční productProvider, který je inicializován v initState
+          // productProvider je instanční proměnná, takže k ní máme přístup
           if (productProvider.categories.isEmpty && mounted) {
             await productProvider.fetchCategories();
           }
           if (!mounted) return;
-          final result = await Navigator.of(context).push<bool?>(MaterialPageRoute(builder: (context) => EditProductScreen(categories: productProvider.categories, product: null)));
-          // Listener _onProductProviderChange by měl zajistit refresh, pokud dojde ke změně
+
+          await Navigator.of(context).push<bool?>(
+            MaterialPageRoute(
+              builder: (context) => EditProductScreen(
+                categories: productProvider.categories,
+                product: null,
+              ),
+            ),
+          );
         },
         backgroundColor: Colors.grey[850],
         tooltip: localizations.translate('addNewProduct'),

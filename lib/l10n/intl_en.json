@@ -248,5 +248,7 @@
   "noDataForTopCategories": "No data for top categories.",
   "noDataForHourlyGraph": "No data for hourly graph.",
   "noDataForPaymentChart": "No data for payment chart.",
-  "noDataToDisplayInChart": "No data to display in chart."
+  "noDataToDisplayInChart": "No data to display in chart.",
+
+  "invalidProductCodeError": "Product code must be a positive number."
 }

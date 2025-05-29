@@ -248,5 +248,7 @@
   "noDataForTopCategories": "Žádná data pro nejprodávanější kategorie.",
   "noDataForHourlyGraph": "Žádná data pro hodinový graf.",
   "noDataForPaymentChart": "Žádná data pro graf plateb.",
-  "noDataToDisplayInChart": "Žádná data k zobrazení v grafu."
+  "noDataToDisplayInChart": "Žádná data k zobrazení v grafu.",
+
+  "invalidProductCodeError": "Kód produktu musí být kladné číslo."
 }
